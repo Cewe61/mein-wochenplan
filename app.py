@@ -10,6 +10,41 @@ from pathlib import Path
 
 st.set_page_config(page_title="Fit bis 90 kg", page_icon="💪", layout="centered")
 
+st.markdown("""
+<style>
+.block-container{max-width:760px;padding-top:1.1rem;padding-left:.8rem;padding-right:.8rem;padding-bottom:2rem;}
+div[data-testid="stButton"]>button{min-height:52px;font-size:1.05rem;font-weight:700;border-radius:12px;}
+div[data-testid="stMetric"]{background:rgba(127,127,127,.08);border-radius:12px;padding:.55rem;}
+.stTabs [data-baseweb="tab-list"]{gap:.25rem;flex-wrap:wrap;}
+.stTabs [data-baseweb="tab"]{padding-left:.55rem;padding-right:.55rem;}
+@media (max-width:700px){h1{font-size:1.8rem!important}h2{font-size:1.45rem!important}h3{font-size:1.2rem!important}}
+</style>
+""", unsafe_allow_html=True)
+
+
+# Übungsbilder aus dem lokalen assets-Ordner
+EXERCISE_IMAGES = {
+    "Kniebeugen": "assets/kniebeugen.png",
+    "Liegestütze": "assets/liegestuetze.png",
+    "Rückwärts-Ausfallschritte": "assets/ausfallschritte.png",
+    "Split Squats": "assets/split_squats.png",
+    "Reverse Snow Angels": "assets/reverse_snow_angels.png",
+    "Y-T-W": "assets/ytw.png",
+    "Bird Dog": "assets/bird_dog.png",
+    "Glute Bridge": "assets/glute_bridge.png",
+    "Plank": "assets/plank.png",
+    "Scapular Push-ups": "assets/scapular_pushups.png",
+    "Seitstütz links": "assets/seitstuetz.png",
+    "Seitstütz rechts": "assets/seitstuetz.png",
+}
+
+def show_exercise_image(name):
+    image_path = EXERCISE_IMAGES.get(name)
+    if image_path and Path(image_path).exists():
+        st.image(image_path, use_container_width=True)
+        if name == "Rückwärts-Ausfallschritte":
+            st.caption("Bild zeigt das Ausfallschritt-Prinzip; in Ihrem Programm wird der Schritt nach hinten ausgeführt.")
+
 # -------------------------------------------------
 # Grundeinstellungen
 # -------------------------------------------------
@@ -420,9 +455,11 @@ def exercise_animation(name):
         padding: 10px 12px;
         border-radius: 12px;
         background: #eef4ff;
-        font-size: 15px;
+        font-size: 14px;
         line-height: 1.35;
         text-align:center;
+        white-space:normal;
+        overflow-wrap:anywhere;
       }}
     </style>
     <div class="anim-wrap">
@@ -435,411 +472,86 @@ def exercise_animation(name):
 
 def workout_runner():
     phase = st.session_state.phase
+    exercises = st.session_state.exercise_list
+    n_ex = max(1, len(exercises))
 
-    st.progress(
-        min(
-            1.0,
-            ((st.session_state.round - 1) * len(st.session_state.exercise_list)
-             + st.session_state.exercise_index + 1)
-            / (st.session_state.rounds_total * len(st.session_state.exercise_list))
-        )
-        if phase not in ["stretch", "done"] else 1.0
-    )
+    if phase not in ["stretch", "done"]:
+        overall_index = ((st.session_state.round - 1) * n_ex + st.session_state.exercise_index)
+        total_steps = max(1, st.session_state.rounds_total * n_ex)
+        st.progress(min(1.0, overall_index / total_steps))
 
     if phase == "exercise":
-        ex = st.session_state.exercise_list[st.session_state.exercise_index]
-        st.markdown(
-            f"""
-            <div style="padding:22px;border-radius:16px;background:#f2f4f7;text-align:center;">
-              <div style="font-size:18px;">Runde {st.session_state.round} von {st.session_state.rounds_total}</div>
-              <div style="font-size:34px;font-weight:800;margin-top:8px;">{ex['name']}</div>
-              <div style="font-size:24px;margin-top:8px;">{ex['amount']}</div>
-              <div style="font-size:17px;margin-top:12px;">{ex['cue']}</div>
-            </div>
-            """, unsafe_allow_html=True
-        )
-
-        exercise_animation(ex["name"])
-
+        ex = exercises[st.session_state.exercise_index]
+        ex_no = st.session_state.exercise_index + 1
+        c1, c2 = st.columns(2)
+        c1.metric("Runde", f"{st.session_state.round}/{st.session_state.rounds_total}")
+        c2.metric("Übung", f"{ex_no}/{n_ex}")
+        st.markdown(f"""
+        <div style="padding:16px 14px;border-radius:16px;background:#18212f;color:#fff;text-align:center;margin-bottom:8px;border:1px solid rgba(255,255,255,.12);">
+          <div style="font-size:28px;font-weight:800;line-height:1.15;">{ex['name']}</div>
+          <div style="font-size:20px;font-weight:700;margin-top:8px;color:#dbeafe;">{ex['amount']}</div>
+          <div style="font-size:15px;margin-top:10px;color:#e5e7eb;line-height:1.35;white-space:normal;overflow-wrap:anywhere;">{ex['cue']}</div>
+        </div>
+        """, unsafe_allow_html=True)
+        show_exercise_image(ex["name"])
         if ex["type"] == "timed":
             if st.session_state.timer_end is None:
-                if st.button("▶️ TIMER STARTEN", use_container_width=True, type="primary"):
-                    start_timed_exercise(ex["seconds"])
-                    st.rerun()
+                if st.button("▶ TIMER STARTEN", use_container_width=True, type="primary"):
+                    start_timed_exercise(ex["seconds"]); st.rerun()
             else:
                 remaining = max(0, int(st.session_state.timer_end - time.time()))
                 render_timer(remaining, ex["name"])
                 if st.button("✅ FERTIG → WEITER", use_container_width=True, type="primary"):
-                    st.session_state.timer_end = None
-                    next_exercise()
-                    st.rerun()
+                    st.session_state.timer_end = None; next_exercise(); st.rerun()
         else:
             if st.button("✅ FERTIG → WEITER", use_container_width=True, type="primary"):
-                next_exercise()
-                st.rerun()
+                next_exercise(); st.rerun()
 
     elif phase == "rest":
         remaining = max(0, int(st.session_state.timer_end - time.time()))
-        st.markdown("## ⏱️ 20 Sekunden Pause")
-        render_timer(remaining, "Kurze Pause")
-        if st.button("Weiter zur nächsten Übung", use_container_width=True, type="primary"):
-            st.session_state.phase = "exercise"
-            st.session_state.timer_end = None
-            st.rerun()
+        st.markdown("## ⏱ Kurze Pause")
+        st.caption("20 Sekunden – ruhig atmen, Position wechseln.")
+        render_timer(remaining, "Pause")
+        if st.button("⏭ NÄCHSTE ÜBUNG", use_container_width=True, type="primary"):
+            st.session_state.phase = "exercise"; st.session_state.timer_end = None; st.rerun()
 
     elif phase == "round_rest":
         remaining = max(0, int(st.session_state.timer_end - time.time()))
-        st.markdown(f"## Runde {st.session_state.round - 1} geschafft ✓")
-        render_timer(remaining, "Pause zwischen den Zirkeln")
-        if st.button(f"Runde {st.session_state.round} starten", use_container_width=True, type="primary"):
-            st.session_state.phase = "exercise"
-            st.session_state.timer_end = None
-            st.rerun()
+        finished_round = st.session_state.round - 1
+        st.success(f"Runde {finished_round} geschafft ✓")
+        st.markdown(f"### Gleich startet Runde {st.session_state.round} von {st.session_state.rounds_total}")
+        render_timer(remaining, "75 Sek. Rundenpause")
+        if st.button(f"▶ RUNDE {st.session_state.round} STARTEN", use_container_width=True, type="primary"):
+            st.session_state.phase = "exercise"; st.session_state.timer_end = None; st.rerun()
 
     elif phase == "stretch":
         idx = st.session_state.stretch_index
         if idx >= len(STRETCH):
-            st.session_state.phase = "done"
-            st.rerun()
-
+            st.session_state.phase = "done"; st.rerun()
         s = STRETCH[idx]
-        st.markdown("## 🧘 Stretching")
-        st.markdown(
-            f"""
-            <div style="padding:22px;border-radius:16px;background:#f2f4f7;text-align:center;">
-              <div style="font-size:32px;font-weight:800;">{s['name']}</div>
-              <div style="font-size:24px;margin-top:8px;">{s['seconds']} Sekunden</div>
-              <div style="font-size:17px;margin-top:10px;">{s['cue']}</div>
-            </div>
-            """, unsafe_allow_html=True
-        )
+        st.progress((idx + 1) / len(STRETCH))
+        st.caption(f"Dehnung {idx+1} von {len(STRETCH)}")
+        st.markdown(f"""
+        <div style="padding:16px;border-radius:16px;background:#18212f;color:#fff;text-align:center;margin-bottom:10px;">
+          <div style="font-size:26px;font-weight:800;">{s['name']}</div>
+          <div style="font-size:20px;margin-top:8px;color:#dbeafe;">{s['seconds']} Sekunden</div>
+          <div style="font-size:15px;margin-top:10px;color:#e5e7eb;white-space:normal;overflow-wrap:anywhere;">{s['cue']}</div>
+        </div>
+        """, unsafe_allow_html=True)
         render_timer(s["seconds"], s["name"])
         if st.button("✅ NÄCHSTE DEHNUNG", use_container_width=True, type="primary"):
-            st.session_state.stretch_index += 1
-            st.rerun()
+            st.session_state.stretch_index += 1; st.rerun()
 
     elif phase == "done":
-        st.balloons()
-        st.success("🎉 Training und Stretching geschafft!")
-        st.markdown("**Ziel:** Kraft möglichst erhalten, während das Gewicht sinkt.")
-        if st.button("Training beenden", use_container_width=True):
-            reset_workout()
-            st.rerun()
+        st.balloons(); st.success("🎉 Training und Stretching geschafft!")
+        st.markdown("**Heute zählt:** sauber trainiert, Kraftreiz gesetzt, fertig.")
+        if st.button("Training beenden", use_container_width=True, type="primary"):
+            reset_workout(); st.rerun()
 
     if phase not in ["done", "idle"]:
         st.divider()
         if st.button("⛔ Training abbrechen", use_container_width=True):
-            reset_workout()
-            st.rerun()
-
-
-
-# -------------------------------------------------
-# Monatsziele, Teilziele, Wochenaufgaben & Tagesblöcke
-# -------------------------------------------------
-TASK_FILE = Path("monatsziele.json")
-
-DEFAULT_PROJECTS = [
-    {
-        "name": "Liskara Werbung",
-        "sessions_per_week": 2,
-        "session_minutes": 60,
-        "preferred_days": ["Montag", "Donnerstag"],
-    },
-    {
-        "name": "Klimaforum Werbung",
-        "sessions_per_week": 4,
-        "session_minutes": 60,
-        "preferred_days": ["Montag", "Dienstag", "Donnerstag", "Freitag"],
-    },
-]
-
-DEFAULT_MONTH_PLAN = {
-    "month": date.today().strftime("%Y-%m"),
-    "monthly_goal": "",
-    "projects": DEFAULT_PROJECTS,
-    "subgoals": [],
-    "weekly_tasks": [],
-    "completed": {}
-}
-
-def load_goals():
-    if TASK_FILE.exists():
-        try:
-            data = json.loads(TASK_FILE.read_text(encoding="utf-8"))
-            for k, v in DEFAULT_MONTH_PLAN.items():
-                if k not in data:
-                    data[k] = v
-            return data
-        except Exception:
-            pass
-    return DEFAULT_MONTH_PLAN.copy()
-
-def save_goals(data):
-    try:
-        TASK_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-        return True
-    except Exception:
-        return False
-
-def current_week_key():
-    y, w, _ = date.today().isocalendar()
-    return f"{y}-W{w:02d}"
-
-def realistic_day_capacity():
-    # Minuten zusätzlich zu Praxis + Bewegung; bewusst konservativ
-    return {
-        "Montag": 120,
-        "Dienstag": 60,
-        "Mittwoch": 45,
-        "Donnerstag": 60,
-        "Freitag": 60,
-        "Samstag": 45,
-        "Sonntag": 45,
-    }
-
-def distribute_week(projects, weekly_tasks=None):
-    weekly_tasks = weekly_tasks or []
-    capacities = realistic_day_capacity()
-    used = {d: 0 for d in capacities}
-    plan = {d: [] for d in capacities}
-
-    # Wiederkehrende Projektblöcke zuerst
-    for p in projects:
-        sessions = int(p.get("sessions_per_week", 1))
-        mins = int(p.get("session_minutes", 60))
-        preferred = p.get("preferred_days", list(capacities.keys())) or list(capacities.keys())
-
-        for _ in range(sessions):
-            candidates = sorted(
-                preferred,
-                key=lambda d: (used[d] / max(capacities[d], 1), used[d])
-            )
-            chosen = candidates[0]
-            plan[chosen].append({
-                "kind": "Routine",
-                "project": p["name"],
-                "task": p["name"],
-                "minutes": mins,
-            })
-            used[chosen] += mins
-
-    # Konkrete Wochenaufgaben danach
-    for task in weekly_tasks:
-        mins = int(task.get("minutes", 30))
-        preferred = task.get("preferred_days", list(capacities.keys())) or list(capacities.keys())
-        candidates = sorted(
-            preferred,
-            key=lambda d: (used[d] / max(capacities[d], 1), used[d])
-        )
-        chosen = candidates[0]
-        plan[chosen].append({
-            "kind": "Aufgabe",
-            "project": task.get("project", ""),
-            "task": task.get("task", "Aufgabe"),
-            "minutes": mins,
-        })
-        used[chosen] += mins
-
-    return plan
-
-def build_weekly_tasks_from_subgoals(subgoals):
-    """Zerlegt Teilziele in kleine, realistische 30–60-Minuten-Blöcke."""
-    tasks = []
-    for sg in subgoals:
-        title = sg.get("title", "").strip()
-        project = sg.get("project", "").strip()
-        total_minutes = int(sg.get("minutes_total", 60))
-        preferred_days = sg.get("preferred_days", list(GERMAN_DAYS.values()))
-
-        if not title:
-            continue
-
-        remaining = total_minutes
-        n = 1
-        while remaining > 0:
-            block = 60 if remaining >= 60 else (45 if remaining >= 45 else 30)
-            tasks.append({
-                "project": project,
-                "task": f"{title}" if total_minutes <= 60 else f"{title} – Teil {n}",
-                "minutes": block,
-                "preferred_days": preferred_days,
-            })
-            remaining -= block
-            n += 1
-    return tasks
-
-def monthly_progress_box():
-    goals = load_goals()
-    month_label = datetime.now().strftime("%B %Y")
-    week_key = current_week_key()
-
-    st.subheader(f"🎯 Monatsplanung – {month_label}")
-    st.caption("Einmal im Monat Ziele festlegen. Daraus entstehen kleine Wochen- und Tagesaufgaben.")
-
-    goal_text = st.text_area(
-        "Monatsziel",
-        value=goals.get("monthly_goal", ""),
-        placeholder="z. B. Klimaforum-Kampagne vorbereiten, Liskara-Werbung verbessern, weitere Projekte abschließen"
-    )
-
-    st.markdown("### 1. Feste Wochenblöcke")
-    projects = []
-    existing_projects = goals.get("projects", DEFAULT_PROJECTS)
-
-    for i, default in enumerate(existing_projects):
-        with st.expander(default.get("name", f"Projekt {i+1}"), expanded=True):
-            name = st.text_input("Projekt", value=default.get("name", ""), key=f"proj_name_{i}")
-            sessions = st.number_input(
-                "Einheiten pro Woche",
-                min_value=1, max_value=7,
-                value=int(default.get("sessions_per_week", 1)),
-                key=f"proj_sessions_{i}"
-            )
-            mins_options = [30, 45, 60, 90, 120]
-            default_mins = int(default.get("session_minutes", 60))
-            idx = mins_options.index(default_mins) if default_mins in mins_options else 2
-            mins = st.selectbox(
-                "Dauer je Einheit",
-                mins_options,
-                index=idx,
-                key=f"proj_mins_{i}"
-            )
-            pref = st.multiselect(
-                "Geeignete Tage",
-                list(GERMAN_DAYS.values()),
-                default=default.get("preferred_days", ["Montag"]),
-                key=f"proj_days_{i}"
-            )
-            projects.append({
-                "name": name,
-                "sessions_per_week": int(sessions),
-                "session_minutes": int(mins),
-                "preferred_days": pref or list(GERMAN_DAYS.values()),
-            })
-
-    st.markdown("### 2. Teilziele des Monats")
-    st.caption("Beispiel: „3 neue Anzeigenmotive“, „Landingpage prüfen“, „Newsletter vorbereiten“.")
-
-    existing_subgoals = goals.get("subgoals", [])
-    subgoal_count = st.number_input(
-        "Anzahl Teilziele",
-        min_value=0, max_value=12,
-        value=max(3, len(existing_subgoals)) if existing_subgoals else 3,
-        step=1
-    )
-
-    subgoals = []
-    for i in range(int(subgoal_count)):
-        old = existing_subgoals[i] if i < len(existing_subgoals) else {}
-        with st.expander(f"Teilziel {i+1}", expanded=(i < 3)):
-            project = st.text_input(
-                "Projekt / Bereich",
-                value=old.get("project", ""),
-                placeholder="z. B. Klimaforum",
-                key=f"sg_proj_{i}"
-            )
-            title = st.text_input(
-                "Konkretes Ergebnis",
-                value=old.get("title", ""),
-                placeholder="z. B. drei Anzeigenmotive fertigstellen",
-                key=f"sg_title_{i}"
-            )
-            minutes_total = st.selectbox(
-                "Geschätzter Gesamtaufwand",
-                [30, 45, 60, 90, 120, 180, 240],
-                index=[30,45,60,90,120,180,240].index(old.get("minutes_total", 60))
-                if old.get("minutes_total", 60) in [30,45,60,90,120,180,240] else 2,
-                key=f"sg_minutes_{i}"
-            )
-            preferred = st.multiselect(
-                "Geeignete Tage",
-                list(GERMAN_DAYS.values()),
-                default=old.get("preferred_days", ["Montag", "Donnerstag"]),
-                key=f"sg_days_{i}"
-            )
-            if title.strip():
-                subgoals.append({
-                    "project": project,
-                    "title": title,
-                    "minutes_total": int(minutes_total),
-                    "preferred_days": preferred or list(GERMAN_DAYS.values())
-                })
-
-    c1, c2 = st.columns(2)
-    with c1:
-        if st.button("🧩 Teilziele in Wochenaufgaben zerlegen", use_container_width=True):
-            generated = build_weekly_tasks_from_subgoals(subgoals)
-            goals["weekly_tasks"] = generated
-            goals["subgoals"] = subgoals
-            goals["monthly_goal"] = goal_text
-            goals["projects"] = projects
-            save_goals(goals)
-            st.success(f"{len(generated)} konkrete Arbeitsblöcke erstellt.")
-            st.rerun()
-
-    with c2:
-        if st.button("💾 Monatsplan speichern", use_container_width=True, type="primary"):
-            goals["month"] = date.today().strftime("%Y-%m")
-            goals["monthly_goal"] = goal_text
-            goals["projects"] = projects
-            goals["subgoals"] = subgoals
-            if save_goals(goals):
-                st.success("Monatsplan gespeichert.")
-            else:
-                st.warning("Plan konnte auf diesem Hosting nicht dauerhaft gespeichert werden.")
-
-    # Aktuelle Wochenaufgaben
-    goals = load_goals()
-    weekly_tasks = goals.get("weekly_tasks", [])
-
-    st.markdown("### 3. Diese Woche")
-    if not weekly_tasks:
-        st.info("Noch keine konkreten Wochenaufgaben erzeugt. Oben Teilziele eintragen und zerlegen.")
-    else:
-        st.caption("Diese Blöcke werden zusätzlich zu den festen Liskara-/Klimaforum-Stunden verteilt.")
-
-    plan = distribute_week(goals.get("projects", projects), weekly_tasks)
-    completed = goals.get("completed", {})
-    week_done = completed.get(week_key, {})
-
-    for day in GERMAN_DAYS.values():
-        with st.expander(f"{day}", expanded=(day == GERMAN_DAYS[date.today().weekday()])):
-            st.write(f"**Bewegung:** {WEEK_PLAN[day][2]}")
-
-            items = plan[day]
-            if not items:
-                st.write("Keine zusätzliche Aufgabe.")
-                continue
-
-            for j, item in enumerate(items):
-                task_id = f"{day}_{j}_{item['project']}_{item['task']}"
-                default_done = bool(week_done.get(task_id, False))
-                label = f"{item['task']} · {item['minutes']} Min."
-                if item["project"] and item["project"] != item["task"]:
-                    label = f"{item['project']}: {label}"
-
-                done = st.checkbox(
-                    label,
-                    value=default_done,
-                    key=f"done_{week_key}_{task_id}"
-                )
-                week_done[task_id] = done
-
-    completed[week_key] = week_done
-    goals["completed"] = completed
-    save_goals(goals)
-
-    # Fortschritt
-    all_values = list(week_done.values())
-    if all_values:
-        done_count = sum(1 for x in all_values if x)
-        total = len(all_values)
-        st.progress(done_count / total)
-        st.caption(f"Woche: {done_count} von {total} Blöcken erledigt.")
-
-    st.markdown("### 4. Monats-Review")
-    st.write("Am Monatsanfang oder Monatsende können Sie mir einfach Ihre neuen Ziele nennen. Ich kann daraus passende Teilziele und realistische Zeitblöcke formulieren, die Sie hier übernehmen.")
+            reset_workout(); st.rerun()
 
 # -------------------------------------------------
 # App
@@ -970,3 +682,4 @@ with tabs[5]:
 
 st.divider()
 st.caption("Progression: Wird eine Übung leicht, lieber langsamer oder anspruchsvoller ausführen statt unbegrenzt Wiederholungen hinzuzufügen.")
+
