@@ -7,8 +7,16 @@ import time
 import json
 import calendar
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 st.set_page_config(page_title="Fit bis 90 kg", page_icon="💪", layout="centered")
+
+GERMANY_TZ = ZoneInfo("Europe/Berlin")
+
+def local_today():
+    """Lokales Datum in Deutschland – unabhängig von der Streamlit-Server-Zeitzone."""
+    return datetime.now(GERMANY_TZ).date()
+
 
 st.markdown("""
 <style>
@@ -232,7 +240,7 @@ def render_daily_dashboard(day_name):
     st.caption("Alles, was heute zählt – einfach abhaken.")
 
     tasks = DAILY_TASKS.get(day_name, [])
-    date_key = date.today().isoformat()
+    date_key = local_today().isoformat()
     saved = load_progress().get(date_key, {})
 
     done_count = sum(bool(saved.get(task_id, False)) for task_id, _ in tasks)
@@ -263,7 +271,7 @@ def monthly_progress_box():
     st.caption("Die Häkchen aus dem Tages-Dashboard werden hier zusammengefasst.")
 
     data = load_progress()
-    today = date.today()
+    today = local_today()
     year, month = today.year, today.month
     month_label = datetime.now().strftime("%B %Y")
 
@@ -607,52 +615,100 @@ def exercise_animation(name):
 
     tip = tips.get(key, "Langsam, kontrolliert und nur im schmerzfreien Bewegungsbereich ausführen.")
 
+    # Optisch aufwerten: größere, freundlichere Figur und weichere Linien.
+    f1 = (f1.replace('stroke="#222"', 'stroke="#163a63"')
+            .replace('fill="#f4f4f4"', 'fill="#dbeafe"')
+            .replace('stroke="#c4cad2"', 'stroke="#cbd5e1"')
+            .replace('fill="#69717c"', 'fill="#475569"'))
+    f2 = (f2.replace('stroke="#222"', 'stroke="#163a63"')
+            .replace('fill="#f4f4f4"', 'fill="#dbeafe"')
+            .replace('stroke="#c4cad2"', 'stroke="#cbd5e1"')
+            .replace('fill="#69717c"', 'fill="#475569"'))
+
     html = f"""
     <style>
+      .exercise-card {{
+        max-width: 520px;
+        margin: 8px auto 12px auto;
+        padding: 14px 14px 12px 14px;
+        border: 1px solid #dbe3ee;
+        border-radius: 20px;
+        background: linear-gradient(180deg,#f8fbff 0%,#eef5ff 100%);
+        box-shadow: 0 8px 24px rgba(15, 42, 70, .08);
+      }}
+      .movement-title {{
+        text-align:center;
+        font: 700 14px/1.2 Arial,sans-serif;
+        color:#35516f;
+        letter-spacing:.02em;
+        margin-bottom:4px;
+      }}
       .anim-wrap {{
         position: relative;
         width: 100%;
-        max-width: 480px;
-        height: 178px;
-        margin: 8px auto 6px auto;
+        height: 222px;
+        margin: 0 auto;
+        overflow:hidden;
       }}
       .anim-frame {{
         position: absolute;
         inset: 0;
-        animation-duration: 2.0s;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        transform-origin:50% 60%;
+        animation-duration: 2.4s;
         animation-iteration-count: infinite;
-        animation-timing-function: steps(1,end);
+        animation-timing-function: ease-in-out;
+      }}
+      .anim-frame svg {{
+        width:100%;
+        max-width:420px;
+        height:220px;
       }}
       .frame-a {{ animation-name: phaseA; }}
       .frame-b {{ animation-name: phaseB; }}
       @keyframes phaseA {{
-        0%,49% {{ opacity:1; }}
-        50%,100% {{ opacity:0; }}
+        0%, 38%   {{ opacity:1; transform:scale(1) translateY(0); }}
+        50%, 88%  {{ opacity:0; transform:scale(.985) translateY(2px); }}
+        100%       {{ opacity:1; transform:scale(1) translateY(0); }}
       }}
       @keyframes phaseB {{
-        0%,49% {{ opacity:0; }}
-        50%,100% {{ opacity:1; }}
+        0%, 38%   {{ opacity:0; transform:scale(.985) translateY(2px); }}
+        50%, 88%  {{ opacity:1; transform:scale(1) translateY(0); }}
+        100%       {{ opacity:0; transform:scale(.985) translateY(2px); }}
+      }}
+      .motion-dots {{
+        text-align:center;
+        color:#6b8db3;
+        font:700 18px Arial,sans-serif;
+        margin-top:-4px;
       }}
       .tipbox {{
-        max-width:480px;
-        margin: 2px auto 8px auto;
-        padding: 10px 12px;
-        border-radius: 12px;
-        background: #eef4ff;
-        font-size: 14px;
-        line-height: 1.35;
+        max-width:520px;
+        margin: 0 auto 8px auto;
+        padding: 11px 14px;
+        border-radius: 14px;
+        background: #eaf2ff;
+        border:1px solid #d5e5ff;
+        color:#203a56;
+        font: 14px/1.4 Arial,sans-serif;
         text-align:center;
         white-space:normal;
         overflow-wrap:anywhere;
       }}
     </style>
-    <div class="anim-wrap">
-      <div class="anim-frame frame-a">{f1}</div>
-      <div class="anim-frame frame-b">{f2}</div>
+    <div class="exercise-card">
+      <div class="movement-title">BEWEGUNGSABLAUF</div>
+      <div class="anim-wrap">
+        <div class="anim-frame frame-a">{f1}</div>
+        <div class="anim-frame frame-b">{f2}</div>
+      </div>
+      <div class="motion-dots">● &nbsp; ↔ &nbsp; ●</div>
     </div>
     <div class="tipbox"><b>Technik:</b> {tip}</div>
     """
-    st.components.v1.html(html, height=235)
+    st.components.v1.html(html, height=330)
 
 def workout_runner():
     phase = st.session_state.phase
@@ -743,7 +799,7 @@ def workout_runner():
 # -------------------------------------------------
 st.title("💪 Fit bis 90 kg")
 
-today_name = GERMAN_DAYS[date.today().weekday()]
+today_name = GERMAN_DAYS[local_today().weekday()]
 icon, typ, summary = WEEK_PLAN[today_name]
 
 # Tages-Checkliste direkt ganz oben unter dem App-Titel.
@@ -847,7 +903,7 @@ with tabs[4]:
     remaining = max(0.0, current_weight - TARGET_WEIGHT)
     if weekly_loss > 0 and remaining > 0:
         weeks = remaining / weekly_loss
-        target_date = date.today() + pd.Timedelta(days=math.ceil(weeks * 7))
+        target_date = local_today() + pd.Timedelta(days=math.ceil(weeks * 7))
         target_text = pd.Timestamp(target_date).strftime("%d.%m.%Y")
     elif remaining == 0:
         target_text = "Ziel erreicht"
