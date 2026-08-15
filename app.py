@@ -30,7 +30,7 @@ div[data-testid="stMetric"]{background:rgba(127,127,127,.08);border-radius:12px;
 """, unsafe_allow_html=True)
 
 
-# Übungsbilder aus dem lokalen assets-Ordner
+# Hochwertige Übungsbilder aus dem lokalen assets-Ordner
 EXERCISE_IMAGES = {
     "Kniebeugen": "assets/kniebeugen.png",
     "Liegestütze": "assets/liegestuetze.png",
@@ -51,7 +51,9 @@ def show_exercise_image(name):
     if image_path and Path(image_path).exists():
         st.image(image_path, use_container_width=True)
         if name == "Rückwärts-Ausfallschritte":
-            st.caption("Bild zeigt das Ausfallschritt-Prinzip; in Ihrem Programm wird der Schritt nach hinten ausgeführt.")
+            st.caption("Die Vorlage zeigt das Lunge-Prinzip; im Programm wird die Variante als Rückwärts-Ausfallschritt ausgeführt.")
+        elif name == "Split Squats":
+            st.caption("Die Vorlage zeigt die Split-Squat-Variante mit erhöhtem hinterem Fuß.")
 
 # -------------------------------------------------
 # Grundeinstellungen
@@ -154,14 +156,14 @@ PROGRESS_FILE = Path(".fit_progress.json")
 
 DAILY_TASKS = {
     "Montag": [
-        ("projects", "📌 Projekte – 60 Minuten Klimaschutz-Forum"),
+        ("projects", "📌 Projekte – 60 Minuten konzentriert arbeiten"),
         ("regeneration", "🟦 Regeneration / kein Zusatztraining"),
         ("meal_16", "🥗 16:00 – Proteinmahlzeit + Gemüse"),
         ("meal_evening", "🍤 19:30–20:00 – Proteinmahlzeit + Gemüse"),
         ("fluids", "💧 Ausreichend trinken"),
     ],
     "Dienstag": [
-        ("projects", "📌 Projekte – 60 Minuten Klimaschutz-Forum"),
+        ("projects", "📌 Projekte – 60 Minuten konzentriert arbeiten"),
         ("dog", "🐕 4 km mit dem Hund"),
         ("workout", "💪 Kraft A – 3 Zirkel"),
         ("stretch", "🧘 4–5 Min Stretching"),
@@ -170,14 +172,14 @@ DAILY_TASKS = {
         ("fluids", "💧 Ausreichend trinken"),
     ],
     "Mittwoch": [
-        ("projects", "📌 Projekte – 60 Minuten Klimaschutz-Forum"),
+        ("projects", "📌 Projekte – 60 Minuten konzentriert arbeiten"),
         ("treadmill", "🏃 Laufband – 45 Min · 4,4 km/h · 10 %"),
         ("meal_16", "🥗 16:00 – Proteinmahlzeit + Gemüse"),
         ("meal_evening", "🍤 19:30–20:00 – Proteinmahlzeit + Gemüse"),
         ("fluids", "💧 Ausreichend trinken"),
     ],
     "Donnerstag": [
-        ("projects", "📌 Projekte – 60 Minuten Klimaschutz-Forum"),
+        ("projects", "📌 Projekte – 60 Minuten konzentriert arbeiten"),
         ("dog", "🐕 4 km mit dem Hund"),
         ("workout", "🧍 Rücken/Core – 2 leichte Zirkel"),
         ("stretch", "🧘 4–5 Min Stretching"),
@@ -186,7 +188,7 @@ DAILY_TASKS = {
         ("fluids", "💧 Ausreichend trinken"),
     ],
     "Freitag": [
-        ("projects", "📌 Projekte – 60 Minuten Klimaschutz-Forum"),
+        ("projects", "📌 Projekte – 60 Minuten konzentriert arbeiten"),
         ("dog", "🐕 4 km mit dem Hund"),
         ("workout", "💪 Kraft B – 3 Zirkel"),
         ("stretch", "🧘 4–5 Min Stretching"),
@@ -195,14 +197,14 @@ DAILY_TASKS = {
         ("fluids", "💧 Ausreichend trinken"),
     ],
     "Samstag": [
-        ("projects", "📌 Projekte – 60 Minuten Liskara"),
+        ("projects", "📌 Projekte – 60 Minuten konzentriert arbeiten"),
         ("treadmill", "🏃 Laufband – 45 Min · 4,4 km/h · 10 %"),
         ("meal_16", "🥗 16:00 – Proteinmahlzeit + Gemüse"),
         ("meal_evening", "🍤 19:30–20:00 – Proteinmahlzeit + Gemüse"),
         ("fluids", "💧 Ausreichend trinken"),
     ],
     "Sonntag": [
-        ("projects", "📌 Projekte – 60 Minuten Liskara"),
+        ("projects", "📌 Projekte – 60 Minuten konzentriert arbeiten"),
         ("treadmill", "🏃 Laufband – 45 Min · 4,4 km/h · 10 %"),
         ("weekly_check", "⚖️ Gewicht / Wochencheck dokumentieren"),
         ("meal_16", "🥗 16:00 – Proteinmahlzeit + Gemüse"),
@@ -740,7 +742,6 @@ def workout_runner():
           <div style="font-size:15px;margin-top:10px;color:#e5e7eb;line-height:1.35;white-space:normal;overflow-wrap:anywhere;">{ex['cue']}</div>
         </div>
         """, unsafe_allow_html=True)
-        exercise_animation(ex["name"])
         show_exercise_image(ex["name"])
         if ex["type"] == "timed":
             if st.session_state.timer_end is None:
