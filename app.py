@@ -139,6 +139,13 @@ for k, v in defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
+# Einmaliger Reset nach diesem Update, damit kein altes Training fälschlich als aktiv erscheint.
+APP_STATE_VERSION = "2026-08-15-v3"
+if st.session_state.get("_app_state_version") != APP_STATE_VERSION:
+    for k, v in defaults.items():
+        st.session_state[k] = v
+    st.session_state["_app_state_version"] = APP_STATE_VERSION
+
 
 # -------------------------------------------------
 # Tages-Dashboard / Fortschritt
@@ -812,79 +819,64 @@ st.info(f"{icon} **{typ}**  \n{summary}")
 tabs = st.tabs(["🏠 Heute", "▶️ Training", "📅 Woche", "🎯 Aufgaben", "⚖️ Gewicht", "🥗 Ernährung"])
 
 with tabs[0]:
-    # Wenn ein Training gestartet wurde, läuft es direkt auf der Startseite weiter.
-    # Dadurch bleibt man nach dem Klick auf "Starten" im sichtbaren Trainingsablauf.
+    st.markdown("### 🏋️ Training heute")
+
     if st.session_state.active_workout:
+        st.info(f"▶️ Ausgewählt: **{st.session_state.active_workout}**")
+        st.caption("Zum Ansehen oder Fortsetzen bitte oben auf „▶️ Training“ tippen.")
+        if st.button("⛔ Auswahl zurücksetzen", use_container_width=True, key="today_reset_workout"):
+            reset_workout()
+            st.rerun()
+    elif today_name == "Dienstag":
+        st.write("🐕 4 km mit dem Hund → danach Kraft A → Stretching")
+        if st.button("▶️ HEUTIGES TRAINING STARTEN", use_container_width=True, type="primary", key="today_train_tuesday"):
+            begin_workout("Kraft A", WORKOUT_A, 3)
+            st.rerun()
+    elif today_name == "Donnerstag":
+        st.write("🐕 4 km mit dem Hund → danach Rücken/Core → Stretching")
+        if st.button("▶️ HEUTIGES TRAINING STARTEN", use_container_width=True, type="primary", key="today_train_thursday"):
+            begin_workout("Rücken/Core", WORKOUT_CORE, 2)
+            st.rerun()
+    elif today_name == "Freitag":
+        st.write("🐕 4 km mit dem Hund → danach Kraft B → Stretching")
+        if st.button("▶️ HEUTIGES TRAINING STARTEN", use_container_width=True, type="primary", key="today_train_friday"):
+            begin_workout("Kraft B", WORKOUT_B, 3)
+            st.rerun()
+    elif today_name in ["Mittwoch", "Samstag", "Sonntag"]:
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Dauer", "45 min")
+        c2.metric("Tempo", "4,4 km/h")
+        c3.metric("Steigung", "10 %")
+        st.write("🏃 Gleichmäßig laufen. Krafttraining kannst du unabhängig davon im Tab „Training“ ansehen.")
+    else:
+        st.success("🟦 Heute ist Regenerationstag.")
+        st.caption("Krafttraining kannst du unabhängig davon im Tab „Training“ ansehen.")
+
+with tabs[1]:
+    st.markdown("### Training auswählen oder ansehen")
+    st.caption("Du kannst jedes Krafttraining jederzeit öffnen – unabhängig vom heutigen Wochentag.")
+
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        choose_a = st.button("Dienstag\nKraft A", use_container_width=True, key="select_workout_a")
+    with c2:
+        choose_core = st.button("Donnerstag\nRücken/Core", use_container_width=True, key="select_workout_core")
+    with c3:
+        choose_b = st.button("Freitag\nKraft B", use_container_width=True, key="select_workout_b")
+
+    if choose_a:
+        begin_workout("Kraft A", WORKOUT_A, 3)
+    elif choose_core:
+        begin_workout("Rücken/Core", WORKOUT_CORE, 2)
+    elif choose_b:
+        begin_workout("Kraft B", WORKOUT_B, 3)
+
+    if st.session_state.active_workout:
+        st.divider()
         st.markdown(f"### 🏋️ {st.session_state.active_workout}")
         workout_runner()
     else:
-        st.markdown("### 🏋️ Training heute")
-
-        if today_name == "Dienstag":
-            st.write("🐕 4 km mit dem Hund → danach Kraft A → Stretching")
-            if st.button(
-                "▶️ HEUTIGES TRAINING STARTEN",
-                use_container_width=True,
-                type="primary",
-                key="today_train_tuesday",
-            ):
-                begin_workout("Kraft A", WORKOUT_A, 3)
-                st.rerun()
-
-        elif today_name == "Donnerstag":
-            st.write("🐕 4 km mit dem Hund → danach Rücken/Core → Stretching")
-            if st.button(
-                "▶️ HEUTIGES TRAINING STARTEN",
-                use_container_width=True,
-                type="primary",
-                key="today_train_thursday",
-            ):
-                begin_workout("Rücken/Core", WORKOUT_CORE, 2)
-                st.rerun()
-
-        elif today_name == "Freitag":
-            st.write("🐕 4 km mit dem Hund → danach Kraft B → Stretching")
-            if st.button(
-                "▶️ HEUTIGES TRAINING STARTEN",
-                use_container_width=True,
-                type="primary",
-                key="today_train_friday",
-            ):
-                begin_workout("Kraft B", WORKOUT_B, 3)
-                st.rerun()
-
-        elif today_name in ["Mittwoch", "Samstag", "Sonntag"]:
-            c1, c2, c3 = st.columns(3)
-            c1.metric("Dauer", "45 min")
-            c2.metric("Tempo", "4,4 km/h")
-            c3.metric("Steigung", "10 %")
-            st.write("🏃 Gleichmäßig laufen. Bei ungewöhnlicher Kreislaufreaktion oder Schmerzen Training abbrechen.")
-        else:
-            st.success("🟦 Heute ist Regenerationstag.")
-
-with tabs[1]:
-    # Auswahl eines Trainings. Nach dem Start springt die App automatisch
-    # auf die Startseite, wo der komplette Ablauf inklusive Animationen erscheint.
-    if st.session_state.active_workout:
-        st.success(f"▶️ {st.session_state.active_workout} läuft gerade auf der Startseite „Heute“.")
-        st.caption("Dort siehst du Übung, Animation, Wiederholungen, Timer und den Weiter-Button.")
-    else:
-        st.markdown("### Training auswählen")
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            if st.button("Dienstag\nKraft A", use_container_width=True, key="select_workout_a"):
-                begin_workout("Kraft A", WORKOUT_A, 3)
-                st.rerun()
-        with c2:
-            if st.button("Donnerstag\nRücken/Core", use_container_width=True, key="select_workout_core"):
-                begin_workout("Rücken/Core", WORKOUT_CORE, 2)
-                st.rerun()
-        with c3:
-            if st.button("Freitag\nKraft B", use_container_width=True, key="select_workout_b"):
-                begin_workout("Kraft B", WORKOUT_B, 3)
-                st.rerun()
-
-        st.caption("Nach dem Start erscheint das Training direkt auf der Seite „Heute“ – Übung für Übung mit Animation.")
+        st.info("Wähle oben ein Training aus. Es wird dann direkt hier mit Animationen geöffnet.")
 
 with tabs[2]:
     st.markdown("### Wochenplan")
