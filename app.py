@@ -55,28 +55,167 @@ div[data-testid="stCheckbox"]:hover{
 """, unsafe_allow_html=True)
 
 
-# Übungsbilder aus dem lokalen assets-Ordner
+
+# -------------------------------------------------
+# Übungsdarstellung: freie Exercise-Datenbank + lokale Fallbacks
+# -------------------------------------------------
+# Quelle der Bildpaare:
+# https://github.com/yuhonas/free-exercise-db
+# Die Datenbank stellt pro Übung typischerweise zwei Fotos bereit
+# (Start-/Endposition). Diese werden unten weich überblendet und wirken
+# dadurch wie eine kurze Übungsanimation.
+DB_BASE = "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises"
+
+EXERCISE_DB = {
+    "Kniebeugen": ("Bodyweight_Squat/0.jpg", "Bodyweight_Squat/1.jpg"),
+    "Liegestütze": ("Pushups/0.jpg", "Pushups/1.jpg"),
+    "Rückwärts-Ausfallschritte": ("Bodyweight_Walking_Lunge/0.jpg", "Bodyweight_Walking_Lunge/1.jpg"),
+    # Die Datenbank hat hier keine reine Bodyweight-Variante; die Bewegung ist dieselbe.
+    "Split Squats": ("Split_Squat_with_Dumbbells/0.jpg", "Split_Squat_with_Dumbbells/1.jpg"),
+    "Plank": ("Plank/0.jpg", "Plank/1.jpg"),
+    "Seitstütz links": ("Side_Bridge/0.jpg", "Side_Bridge/1.jpg"),
+    "Seitstütz rechts": ("Side_Bridge/0.jpg", "Side_Bridge/1.jpg"),
+    # Für Scapular Push-ups zeigt das Push-up-Bild die korrekte Grundposition.
+    "Scapular Push-ups": ("Pushups/0.jpg", "Pushups/1.jpg"),
+}
+
+# Für Übungen, die in der freien Datenbank nicht passend vorhanden sind,
+# werden vorhandene lokale Grafiken weiterverwendet.
 EXERCISE_IMAGES = {
-    "Kniebeugen": "assets/kniebeugen.png",
-    "Liegestütze": "assets/liegestuetze.png",
-    "Rückwärts-Ausfallschritte": "assets/ausfallschritte.png",
-    "Split Squats": "assets/split_squats.png",
     "Reverse Snow Angels": "assets/reverse_snow_angels.png",
     "Y-T-W": "assets/ytw.png",
     "Bird Dog": "assets/bird_dog.png",
     "Glute Bridge": "assets/glute_bridge.png",
-    "Plank": "assets/plank.png",
-    "Scapular Push-ups": "assets/scapular_pushups.png",
-    "Seitstütz links": "assets/seitstuetz.png",
-    "Seitstütz rechts": "assets/seitstuetz.png",
 }
 
-def show_exercise_image(name):
+EXERCISE_TIPS = {
+    "Kniebeugen": "Brust aufrecht · Knie folgen den Fußspitzen · Druck über den ganzen Fuß.",
+    "Liegestütze": "Körper bleibt wie ein Brett · Ellenbogen etwa 30–45° zum Oberkörper.",
+    "Rückwärts-Ausfallschritte": "Großer Schritt nach hinten · vorderes Knie stabil über dem Fuß.",
+    "Split Squats": "Oberkörper aufrecht · kontrolliert senken · vorderes Bein arbeitet.",
+    "Reverse Snow Angels": "Bauchlage · Schulterblätter nach hinten/unten · Nacken lang.",
+    "Y-T-W": "Arme nur so hoch wie sauber möglich · Schulterblätter aktiv zusammenführen.",
+    "Bird Dog": "Becken bleibt ruhig · nicht ins Hohlkreuz · lang statt hoch strecken.",
+    "Glute Bridge": "Rippen unten · Gesäß aktiv · nicht aus dem unteren Rücken überstrecken.",
+    "Plank": "Bauch und Gesäß fest · Kopf, Rücken und Beine bilden eine Linie.",
+    "Seitstütz links": "Hüfte aktiv hochdrücken · Schulter weg vom Ohr.",
+    "Seitstütz rechts": "Hüfte aktiv hochdrücken · Schulter weg vom Ohr.",
+    "Scapular Push-ups": "Arme gestreckt lassen · Bewegung ausschließlich aus den Schulterblättern.",
+}
+
+
+def show_exercise_animation(name):
+    """Zeigt eine körpernahe Übungsanimation aus zwei Datenbank-Fotos."""
+    tip = EXERCISE_TIPS.get(
+        name,
+        "Langsam, kontrolliert und nur im schmerzfreien Bewegungsbereich ausführen."
+    )
+
+    pair = EXERCISE_DB.get(name)
+    if pair:
+        url1 = f"{DB_BASE}/{pair[0]}"
+        url2 = f"{DB_BASE}/{pair[1]}"
+
+        # Rechts/links beim Seitstütz optisch spiegeln.
+        mirror = "scaleX(-1)" if name == "Seitstütz rechts" else "scaleX(1)"
+
+        html = f"""
+        <style>
+          .db-card {{
+            max-width:540px;
+            margin:8px auto 10px auto;
+            padding:12px;
+            border:1px solid #dbe3ee;
+            border-radius:20px;
+            background:linear-gradient(180deg,#f8fbff 0%,#eef5ff 100%);
+            box-shadow:0 8px 24px rgba(15,42,70,.08);
+          }}
+          .db-title {{
+            text-align:center;
+            font:700 13px/1.2 Arial,sans-serif;
+            letter-spacing:.05em;
+            color:#35516f;
+            margin:2px 0 8px 0;
+          }}
+          .db-anim {{
+            position:relative;
+            height:300px;
+            overflow:hidden;
+            border-radius:15px;
+            background:#fff;
+          }}
+          .db-anim img {{
+            position:absolute;
+            inset:0;
+            width:100%;
+            height:100%;
+            object-fit:contain;
+            transform:{mirror};
+            animation-duration:2.8s;
+            animation-iteration-count:infinite;
+            animation-timing-function:ease-in-out;
+          }}
+          .db-a {{ animation-name:dbA; }}
+          .db-b {{ animation-name:dbB; }}
+          @keyframes dbA {{
+            0%,38% {{opacity:1}}
+            50%,88% {{opacity:0}}
+            100% {{opacity:1}}
+          }}
+          @keyframes dbB {{
+            0%,38% {{opacity:0}}
+            50%,88% {{opacity:1}}
+            100% {{opacity:0}}
+          }}
+          .db-motion {{
+            text-align:center;
+            color:#6b8db3;
+            font:700 17px Arial,sans-serif;
+            margin:8px 0 2px 0;
+          }}
+          .db-tip {{
+            max-width:540px;
+            margin:0 auto 10px auto;
+            padding:11px 14px;
+            border-radius:14px;
+            background:#eaf2ff;
+            border:1px solid #d5e5ff;
+            color:#203a56;
+            font:14px/1.4 Arial,sans-serif;
+            text-align:center;
+          }}
+        </style>
+        <div class="db-card">
+          <div class="db-title">BEWEGUNGSABLAUF</div>
+          <div class="db-anim">
+            <img class="db-a" src="{url1}" alt="{name} Startposition">
+            <img class="db-b" src="{url2}" alt="{name} Endposition">
+          </div>
+          <div class="db-motion">● &nbsp; ↔ &nbsp; ●</div>
+        </div>
+        <div class="db-tip"><b>Technik:</b> {tip}</div>
+        """
+        st.components.v1.html(html, height=410)
+        return
+
+    # Fallback für Übungen ohne passendes Datenbank-Bildpaar.
     image_path = EXERCISE_IMAGES.get(name)
     if image_path and Path(image_path).exists():
         st.image(image_path, use_container_width=True)
-        if name == "Rückwärts-Ausfallschritte":
-            st.caption("Bild zeigt das Ausfallschritt-Prinzip; in Ihrem Programm wird der Schritt nach hinten ausgeführt.")
+        st.markdown(
+            f"""
+            <div style="max-width:540px;margin:0 auto 10px auto;padding:11px 14px;
+                        border-radius:14px;background:#eaf2ff;border:1px solid #d5e5ff;
+                        color:#203a56;text-align:center;font-size:14px;">
+              <b>Technik:</b> {tip}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    else:
+        st.info("Für diese Übung ist aktuell noch keine passende Datenbank-Animation hinterlegt.")
+        st.caption(f"Technik: {tip}")
+
 
 # -------------------------------------------------
 # Grundeinstellungen
@@ -165,7 +304,7 @@ for k, v in defaults.items():
         st.session_state[k] = v
 
 # Einmaliger Reset nach diesem Update, damit kein altes Training fälschlich als aktiv erscheint.
-APP_STATE_VERSION = "2026-08-15-v3"
+APP_STATE_VERSION = "2026-08-20-v4-db-animation"
 if st.session_state.get("_app_state_version") != APP_STATE_VERSION:
     for k, v in defaults.items():
         st.session_state[k] = v
@@ -483,334 +622,6 @@ def render_timer(seconds, label):
 
 
 
-def exercise_animation(name):
-    """Körpernähere 2-Phasen-Animation mit Technik-Hinweis."""
-    key = name.lower()
-
-    tips = {
-        "kniebeugen": "Brust aufrecht · Knie folgen den Fußspitzen · Druck über den ganzen Fuß.",
-        "liegestütze": "Körper bleibt wie ein Brett · Ellenbogen ca. 30–45° zum Oberkörper.",
-        "rückwärts-ausfallschritte": "Großer Schritt nach hinten · vorderes Knie stabil über dem Fuß.",
-        "split squats": "Oberkörper aufrecht · kontrolliert senken · vorderes Bein arbeitet.",
-        "reverse snow angels": "Bauchlage · Schulterblätter nach hinten/unten · Nacken lang.",
-        "y-t-w": "Arme nur so hoch wie sauber möglich · Schulterblätter aktiv zusammenführen.",
-        "bird dog": "Becken bleibt ruhig · nicht ins Hohlkreuz · lang statt hoch strecken.",
-        "glute bridge": "Rippen unten · Gesäß aktiv · nicht aus dem unteren Rücken überstrecken.",
-        "plank": "Bauch und Gesäß fest · Kopf, Rücken und Beine bilden eine Linie.",
-        "seitstütz links": "Hüfte aktiv hochdrücken · Schulter weg vom Ohr.",
-        "seitstütz rechts": "Hüfte aktiv hochdrücken · Schulter weg vom Ohr.",
-        "scapular push-ups": "Arme bleiben gestreckt · Bewegung kommt nur aus den Schulterblättern.",
-    }
-
-    def svg(body, label):
-        return f"""
-        <svg viewBox="0 0 260 170" width="100%" height="170" xmlns="http://www.w3.org/2000/svg">
-          <rect x="1" y="1" width="258" height="168" rx="18" fill="#ffffff" stroke="#d9dee5"/>
-          <line x1="18" y1="146" x2="242" y2="146" stroke="#c4cad2" stroke-width="3"/>
-          <text x="130" y="162" text-anchor="middle" font-size="12" fill="#69717c">{label}</text>
-          {body}
-        </svg>
-        """
-
-    # neutral body helpers
-    if "kniebeuge" in key:
-        f1 = svg("""
-          <circle cx="130" cy="34" r="11" fill="#f4f4f4" stroke="#222" stroke-width="3"/>
-          <line x1="130" y1="45" x2="130" y2="88" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="130" y1="58" x2="98" y2="72" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="130" y1="58" x2="162" y2="72" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="130" y1="88" x2="109" y2="116" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="109" y1="116" x2="101" y2="145" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="130" y1="88" x2="151" y2="116" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="151" y1="116" x2="159" y2="145" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-        """, "Start")
-        f2 = svg("""
-          <circle cx="130" cy="49" r="11" fill="#f4f4f4" stroke="#222" stroke-width="3"/>
-          <line x1="130" y1="60" x2="130" y2="96" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="130" y1="70" x2="92" y2="80" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="130" y1="70" x2="168" y2="80" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="130" y1="96" x2="96" y2="101" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="96" y1="101" x2="84" y2="145" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="130" y1="96" x2="164" y2="101" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="164" y1="101" x2="176" y2="145" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <path d="M130 64 C130 74 130 84 130 94" stroke="#5f6b7a" stroke-width="2" fill="none"/>
-        """, "Tiefposition")
-
-    elif "liegest" in key:
-        f1 = svg("""
-          <circle cx="62" cy="72" r="10" fill="#f4f4f4" stroke="#222" stroke-width="3"/>
-          <line x1="72" y1="76" x2="128" y2="91" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="128" y1="91" x2="183" y2="108" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="95" y1="82" x2="87" y2="128" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="121" y1="89" x2="111" y2="130" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="183" y1="108" x2="207" y2="145" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-        """, "Oben")
-        f2 = svg("""
-          <circle cx="65" cy="111" r="10" fill="#f4f4f4" stroke="#222" stroke-width="3"/>
-          <line x1="75" y1="112" x2="132" y2="115" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="132" y1="115" x2="185" y2="121" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="99" y1="114" x2="80" y2="145" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="122" y1="115" x2="108" y2="145" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="185" y1="121" x2="207" y2="145" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-        """, "Unten")
-
-    elif "ausfallschritt" in key or "split squat" in key:
-        f1 = svg("""
-          <circle cx="126" cy="34" r="11" fill="#f4f4f4" stroke="#222" stroke-width="3"/>
-          <line x1="126" y1="45" x2="126" y2="88" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="126" y1="58" x2="98" y2="74" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="126" y1="58" x2="154" y2="74" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="126" y1="88" x2="86" y2="111" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="86" y1="111" x2="70" y2="145" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="126" y1="88" x2="169" y2="116" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="169" y1="116" x2="193" y2="145" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-        """, "Ausgang")
-        f2 = svg("""
-          <circle cx="126" cy="49" r="11" fill="#f4f4f4" stroke="#222" stroke-width="3"/>
-          <line x1="126" y1="60" x2="126" y2="97" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="126" y1="70" x2="99" y2="84" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="126" y1="70" x2="153" y2="84" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="126" y1="97" x2="91" y2="100" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="91" y1="100" x2="71" y2="145" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="126" y1="97" x2="166" y2="126" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="166" y1="126" x2="194" y2="145" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-        """, "Tiefposition")
-
-    elif "glute bridge" in key:
-        f1 = svg("""
-          <circle cx="57" cy="119" r="10" fill="#f4f4f4" stroke="#222" stroke-width="3"/>
-          <line x1="67" y1="121" x2="116" y2="128" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="116" y1="128" x2="159" y2="127" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="159" y1="127" x2="182" y2="145" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="116" y1="128" x2="98" y2="145" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-        """, "Unten")
-        f2 = svg("""
-          <circle cx="57" cy="119" r="10" fill="#f4f4f4" stroke="#222" stroke-width="3"/>
-          <line x1="67" y1="119" x2="114" y2="89" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="114" y1="89" x2="159" y2="103" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="159" y1="103" x2="182" y2="145" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="114" y1="89" x2="99" y2="145" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-        """, "Oben")
-
-    elif "bird dog" in key:
-        f1 = svg("""
-          <circle cx="88" cy="77" r="10" fill="#f4f4f4" stroke="#222" stroke-width="3"/>
-          <line x1="98" y1="80" x2="137" y2="93" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="108" y1="83" x2="84" y2="128" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="128" y1="90" x2="115" y2="143" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="137" y1="93" x2="164" y2="143" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="108" y1="83" x2="80" y2="72" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-        """, "Vierfüßler")
-        f2 = svg("""
-          <circle cx="90" cy="83" r="10" fill="#f4f4f4" stroke="#222" stroke-width="3"/>
-          <line x1="100" y1="86" x2="138" y2="92" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="107" y1="87" x2="53" y2="61" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="126" y1="90" x2="115" y2="143" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="138" y1="92" x2="205" y2="73" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="107" y1="87" x2="91" y2="143" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-        """, "Strecken")
-
-    elif "snow angel" in key:
-        f1 = svg("""
-          <circle cx="130" cy="40" r="10" fill="#f4f4f4" stroke="#222" stroke-width="3"/>
-          <line x1="130" y1="50" x2="130" y2="106" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="130" y1="67" x2="93" y2="99" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="130" y1="67" x2="167" y2="99" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="130" y1="106" x2="111" y2="145" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="130" y1="106" x2="149" y2="145" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-        """, "Arme tief")
-        f2 = svg("""
-          <circle cx="130" cy="40" r="10" fill="#f4f4f4" stroke="#222" stroke-width="3"/>
-          <line x1="130" y1="50" x2="130" y2="106" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="130" y1="67" x2="78" y2="42" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="130" y1="67" x2="182" y2="42" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="130" y1="106" x2="111" y2="145" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="130" y1="106" x2="149" y2="145" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-        """, "Arme hoch")
-
-    elif "y-t-w" in key:
-        f1 = svg("""
-          <circle cx="130" cy="40" r="10" fill="#f4f4f4" stroke="#222" stroke-width="3"/>
-          <line x1="130" y1="50" x2="130" y2="106" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="130" y1="66" x2="82" y2="42" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="130" y1="66" x2="178" y2="42" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="130" y1="106" x2="111" y2="145" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="130" y1="106" x2="149" y2="145" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-        """, "Y")
-        f2 = svg("""
-          <circle cx="130" cy="40" r="10" fill="#f4f4f4" stroke="#222" stroke-width="3"/>
-          <line x1="130" y1="50" x2="130" y2="106" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="130" y1="66" x2="78" y2="66" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="130" y1="66" x2="182" y2="66" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="130" y1="106" x2="111" y2="145" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="130" y1="106" x2="149" y2="145" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-        """, "T / danach W")
-
-    elif "seitstütz" in key:
-        f1 = svg("""
-          <circle cx="66" cy="100" r="10" fill="#f4f4f4" stroke="#222" stroke-width="3"/>
-          <line x1="76" y1="103" x2="132" y2="112" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="132" y1="112" x2="186" y2="122" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="94" y1="106" x2="82" y2="145" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="186" y1="122" x2="207" y2="145" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-        """, "Start")
-        f2 = svg("""
-          <circle cx="66" cy="82" r="10" fill="#f4f4f4" stroke="#222" stroke-width="3"/>
-          <line x1="76" y1="86" x2="132" y2="98" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="132" y1="98" x2="186" y2="111" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="94" y1="90" x2="82" y2="145" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="186" y1="111" x2="207" y2="145" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-        """, "Hüfte hoch")
-
-    elif "plank" in key:
-        f1 = svg("""
-          <circle cx="64" cy="98" r="10" fill="#f4f4f4" stroke="#222" stroke-width="3"/>
-          <line x1="74" y1="101" x2="132" y2="112" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="132" y1="112" x2="189" y2="124" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="99" y1="106" x2="86" y2="145" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="189" y1="124" x2="210" y2="145" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-        """, "Nicht einsacken")
-        f2 = svg("""
-          <circle cx="64" cy="83" r="10" fill="#f4f4f4" stroke="#222" stroke-width="3"/>
-          <line x1="74" y1="86" x2="132" y2="98" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="132" y1="98" x2="189" y2="111" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="99" y1="91" x2="86" y2="145" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="189" y1="111" x2="210" y2="145" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-        """, "Saubere Linie")
-
-    elif "scapular" in key:
-        f1 = svg("""
-          <circle cx="64" cy="83" r="10" fill="#f4f4f4" stroke="#222" stroke-width="3"/>
-          <line x1="74" y1="86" x2="132" y2="98" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="132" y1="98" x2="189" y2="111" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="99" y1="91" x2="86" y2="145" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="189" y1="111" x2="210" y2="145" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <path d="M99 91 Q116 77 133 95" fill="none" stroke="#7a8490" stroke-width="3"/>
-        """, "Schulterblätter zusammen")
-        f2 = svg("""
-          <circle cx="64" cy="83" r="10" fill="#f4f4f4" stroke="#222" stroke-width="3"/>
-          <line x1="74" y1="86" x2="132" y2="98" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="132" y1="98" x2="189" y2="111" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="99" y1="91" x2="86" y2="145" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="189" y1="111" x2="210" y2="145" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <path d="M99 96 Q116 112 133 99" fill="none" stroke="#7a8490" stroke-width="3"/>
-        """, "Schulterblätter auseinander")
-
-    else:
-        f1 = svg("""
-          <circle cx="130" cy="36" r="11" fill="#f4f4f4" stroke="#222" stroke-width="3"/>
-          <line x1="130" y1="47" x2="130" y2="96" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="130" y1="62" x2="96" y2="80" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="130" y1="62" x2="164" y2="80" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="130" y1="96" x2="111" y2="145" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="130" y1="96" x2="149" y2="145" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-        """, "Start")
-        f2 = svg("""
-          <circle cx="130" cy="36" r="11" fill="#f4f4f4" stroke="#222" stroke-width="3"/>
-          <line x1="130" y1="47" x2="130" y2="96" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="130" y1="62" x2="78" y2="58" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="130" y1="62" x2="182" y2="58" stroke="#222" stroke-width="6" stroke-linecap="round"/>
-          <line x1="130" y1="96" x2="111" y2="145" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-          <line x1="130" y1="96" x2="149" y2="145" stroke="#222" stroke-width="7" stroke-linecap="round"/>
-        """, "Ende")
-
-    tip = tips.get(key, "Langsam, kontrolliert und nur im schmerzfreien Bewegungsbereich ausführen.")
-
-    # Optisch aufwerten: größere, freundlichere Figur und weichere Linien.
-    f1 = (f1.replace('stroke="#222"', 'stroke="#163a63"')
-            .replace('fill="#f4f4f4"', 'fill="#dbeafe"')
-            .replace('stroke="#c4cad2"', 'stroke="#cbd5e1"')
-            .replace('fill="#69717c"', 'fill="#475569"'))
-    f2 = (f2.replace('stroke="#222"', 'stroke="#163a63"')
-            .replace('fill="#f4f4f4"', 'fill="#dbeafe"')
-            .replace('stroke="#c4cad2"', 'stroke="#cbd5e1"')
-            .replace('fill="#69717c"', 'fill="#475569"'))
-
-    html = f"""
-    <style>
-      .exercise-card {{
-        max-width: 520px;
-        margin: 8px auto 12px auto;
-        padding: 14px 14px 12px 14px;
-        border: 1px solid #dbe3ee;
-        border-radius: 20px;
-        background: linear-gradient(180deg,#f8fbff 0%,#eef5ff 100%);
-        box-shadow: 0 8px 24px rgba(15, 42, 70, .08);
-      }}
-      .movement-title {{
-        text-align:center;
-        font: 700 14px/1.2 Arial,sans-serif;
-        color:#35516f;
-        letter-spacing:.02em;
-        margin-bottom:4px;
-      }}
-      .anim-wrap {{
-        position: relative;
-        width: 100%;
-        height: 222px;
-        margin: 0 auto;
-        overflow:hidden;
-      }}
-      .anim-frame {{
-        position: absolute;
-        inset: 0;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        transform-origin:50% 60%;
-        animation-duration: 2.4s;
-        animation-iteration-count: infinite;
-        animation-timing-function: ease-in-out;
-      }}
-      .anim-frame svg {{
-        width:100%;
-        max-width:420px;
-        height:220px;
-      }}
-      .frame-a {{ animation-name: phaseA; }}
-      .frame-b {{ animation-name: phaseB; }}
-      @keyframes phaseA {{
-        0%, 38%   {{ opacity:1; transform:scale(1) translateY(0); }}
-        50%, 88%  {{ opacity:0; transform:scale(.985) translateY(2px); }}
-        100%       {{ opacity:1; transform:scale(1) translateY(0); }}
-      }}
-      @keyframes phaseB {{
-        0%, 38%   {{ opacity:0; transform:scale(.985) translateY(2px); }}
-        50%, 88%  {{ opacity:1; transform:scale(1) translateY(0); }}
-        100%       {{ opacity:0; transform:scale(.985) translateY(2px); }}
-      }}
-      .motion-dots {{
-        text-align:center;
-        color:#6b8db3;
-        font:700 18px Arial,sans-serif;
-        margin-top:-4px;
-      }}
-      .tipbox {{
-        max-width:520px;
-        margin: 0 auto 8px auto;
-        padding: 11px 14px;
-        border-radius: 14px;
-        background: #eaf2ff;
-        border:1px solid #d5e5ff;
-        color:#203a56;
-        font: 14px/1.4 Arial,sans-serif;
-        text-align:center;
-        white-space:normal;
-        overflow-wrap:anywhere;
-      }}
-    </style>
-    <div class="exercise-card">
-      <div class="movement-title">BEWEGUNGSABLAUF</div>
-      <div class="anim-wrap">
-        <div class="anim-frame frame-a">{f1}</div>
-        <div class="anim-frame frame-b">{f2}</div>
-      </div>
-      <div class="motion-dots">● &nbsp; ↔ &nbsp; ●</div>
-    </div>
-    <div class="tipbox"><b>Technik:</b> {tip}</div>
-    """
-    st.components.v1.html(html, height=330)
-
 def stretch_illustration(name):
     """Einfache schematische Illustration passend zur jeweiligen Dehnübung."""
     key = name.lower()
@@ -897,8 +708,7 @@ def workout_runner():
           <div style="font-size:15px;margin-top:10px;color:#e5e7eb;line-height:1.35;white-space:normal;overflow-wrap:anywhere;">{ex['cue']}</div>
         </div>
         """, unsafe_allow_html=True)
-        exercise_animation(ex["name"])
-        show_exercise_image(ex["name"])
+        show_exercise_animation(ex["name"])
         if ex["type"] == "timed":
             if st.session_state.timer_end is None:
                 if st.button("▶ TIMER STARTEN", use_container_width=True, type="primary"):
