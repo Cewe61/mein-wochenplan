@@ -601,9 +601,9 @@ def render_timer(seconds, label):
     # Browserseitiger Countdown, ohne zusätzliche Pakete
     html = f"""
     <div style="text-align:center;font-family:Arial,sans-serif;">
-      <div style="font-size:18px;margin-bottom:6px;">{label}</div>
-      <div id="timer" style="font-size:64px;font-weight:700;line-height:1.1;">{seconds}</div>
-      <div style="font-size:15px;margin-top:6px;">Sekunden</div>
+      <div style="font-size:18px;margin-bottom:6px;color:#93c5fd;font-weight:700;">{label}</div>
+      <div id="timer" style="font-size:64px;font-weight:800;line-height:1.1;color:#60a5fa;">{seconds}</div>
+      <div style="font-size:15px;margin-top:6px;color:#93c5fd;font-weight:700;">Sekunden</div>
     </div>
     <script>
       let remaining = {seconds};
