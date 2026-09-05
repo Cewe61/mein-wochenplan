@@ -51,18 +51,21 @@ div[data-testid="stCheckbox"]:hover{
 }
 
 /* Kompakter Trainingsmodus: Bild, Text, Timer und Navigation möglichst in einer Ansicht */
-.fit-card{padding:10px 12px;border-radius:14px;background:#18212f;color:#fff;text-align:center;
-          margin:4px 0 6px 0;border:1px solid rgba(255,255,255,.12);}
-.fit-card .name{font-size:24px;font-weight:800;line-height:1.1;}
-.fit-card .amount{font-size:18px;font-weight:700;margin-top:5px;color:#dbeafe;}
-.fit-card .cue{font-size:13px;margin-top:6px;color:#e5e7eb;line-height:1.25;}
-.compact-note{font-size:.86rem;color:#94a3b8;text-align:center;margin:.1rem 0 .35rem 0;}
-div[data-testid="stSelectbox"]{margin-bottom:.2rem;}
+.fit-card{padding:6px 9px;border-radius:11px;background:#18212f;color:#fff;text-align:center;
+          margin:2px 0 4px 0;border:1px solid rgba(255,255,255,.12);}
+.fit-card .name{font-size:21px;font-weight:800;line-height:1.05;}
+.fit-card .amount{font-size:15px;font-weight:700;margin-top:3px;color:#dbeafe;}
+.fit-card .cue{font-size:12px;margin-top:3px;color:#e5e7eb;line-height:1.15;}
+.compact-note{font-size:.76rem;color:#94a3b8;text-align:center;margin:0 0 .15rem 0;}
+div[data-testid="stSelectbox"]{margin-bottom:0;}
+div[data-testid="stMetric"]{padding:.25rem!important;}
+div[data-testid="stMetric"] label{font-size:.72rem!important;}
+div[data-testid="stMetricValue"]{font-size:1rem!important;}
 @media (max-width:700px){
   h1{font-size:1.65rem!important} h2{font-size:1.35rem!important} h3{font-size:1.08rem!important}
   .block-container{padding-top:.55rem!important;padding-bottom:1rem!important;}
-  div[data-testid="stButton"]>button{min-height:44px;font-size:.94rem;}
-  .fit-card .name{font-size:21px}.fit-card .amount{font-size:16px}.fit-card .cue{font-size:12px}
+  div[data-testid="stButton"]>button{min-height:38px;font-size:.86rem;padding:.2rem .35rem;}
+  .fit-card .name{font-size:18px}.fit-card .amount{font-size:14px}.fit-card .cue{font-size:11px}
 }
 </style>
 """, unsafe_allow_html=True)
@@ -130,9 +133,9 @@ def show_exercise_animation(name):
         if name == "Seitstütz rechts":
             from PIL import Image, ImageOps
             img = Image.open(local_path)
-            st.image(ImageOps.mirror(img), use_container_width=True)
+            st.image(ImageOps.mirror(img), width=250)
         else:
-            st.image(local_path, use_container_width=True)
+            st.image(local_path, width=250)
         st.markdown(f'<div class="compact-note"><b>Technik:</b> {tip}</div>', unsafe_allow_html=True)
         return
 
@@ -144,7 +147,7 @@ def show_exercise_animation(name):
         html = f"""
         <style>
           .db-anim {{
-            position:relative;height:215px;overflow:hidden;border-radius:12px;background:#111827;
+            position:relative;height:150px;overflow:hidden;border-radius:12px;background:#111827;
           }}
           .db-anim img {{
             position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
@@ -160,7 +163,7 @@ def show_exercise_animation(name):
           <img class="db-b" src="{url2}" alt="{name} Endposition">
         </div>
         """
-        st.components.v1.html(html, height=225)
+        st.components.v1.html(html, height=158)
         st.markdown(f'<div class="compact-note"><b>Technik:</b> {tip}</div>', unsafe_allow_html=True)
         return
 
@@ -255,7 +258,7 @@ for k, v in defaults.items():
         st.session_state[k] = v
 
 # Einmaliger Reset nach diesem Update, damit kein altes Training fälschlich als aktiv erscheint.
-APP_STATE_VERSION = "2026-09-05-v5-compact-navigation-male-images"
+APP_STATE_VERSION = "2026-09-05-v6-fixed-nav-ultracompact"
 if st.session_state.get("_app_state_version") != APP_STATE_VERSION:
     for k, v in defaults.items():
         st.session_state[k] = v
@@ -573,12 +576,12 @@ def start_timed_exercise(seconds):
     st.session_state.timer_end = time.time() + seconds
 
 def render_timer(seconds, label):
-    # Browserseitiger Countdown, ohne zusätzliche Pakete
+    """Kompakter browserseitiger Countdown."""
     html = f"""
-    <div style="text-align:center;font-family:Arial,sans-serif;">
-      <div style="font-size:18px;margin-bottom:6px;color:#93c5fd;font-weight:700;">{label}</div>
-      <div id="timer" style="font-size:64px;font-weight:800;line-height:1.1;color:#60a5fa;">{seconds}</div>
-      <div style="font-size:15px;margin-top:6px;color:#93c5fd;font-weight:700;">Sekunden</div>
+    <div style="text-align:center;font-family:Arial,sans-serif;margin:0;padding:0;">
+      <div style="font-size:13px;color:#93c5fd;font-weight:700;">{label}</div>
+      <div id="timer" style="font-size:44px;font-weight:800;line-height:1;color:#60a5fa;">{seconds}</div>
+      <div style="font-size:11px;color:#93c5fd;">Sek.</div>
     </div>
     <script>
       let remaining = {seconds};
@@ -593,7 +596,7 @@ def render_timer(seconds, label):
       }}, 1000);
     </script>
     """
-    st.components.v1.html(html, height=130)
+    st.components.v1.html(html, height=78)
 
 
 
@@ -621,9 +624,9 @@ def stretch_illustration(name):
     if stretch_local and Path(stretch_local).exists():
         if mirror:
             from PIL import Image, ImageOps
-            st.image(ImageOps.mirror(Image.open(stretch_local)), use_container_width=True)
+            st.image(ImageOps.mirror(Image.open(stretch_local)), width=250)
         else:
-            st.image(stretch_local, use_container_width=True)
+            st.image(stretch_local, width=250)
         return
 
     def wrap(body, label):
@@ -690,36 +693,38 @@ def workout_runner():
     exercises = st.session_state.exercise_list
     n_ex = len(exercises)
 
-    # -------------------------
-    # Kraft-/Core-Übung
-    # -------------------------
+    # =========================
+    # KRAFT / CORE
+    # =========================
     if phase in ["exercise", "rest", "round_rest"] and n_ex:
-        # Pausen können jederzeit durch direkte Navigation verlassen werden.
+        # Direkte Navigation soll nicht durch alte Pausenzustände blockiert werden.
         if phase in ["rest", "round_rest"]:
             st.session_state.phase = "exercise"
             st.session_state.timer_end = None
-            phase = "exercise"
 
-        ex = exercises[st.session_state.exercise_index]
-        ex_no = st.session_state.exercise_index + 1
+        idx = st.session_state.exercise_index
+        ex = exercises[idx]
+        ex_no = idx + 1
 
-        # Direkte Übungsauswahl: kein Durchklicken durch alle Runden nötig.
+        # WICHTIG: Key enthält den aktuellen Index.
+        # Dadurch springt Streamlit nach "Weiter" nicht wieder auf die alte Auswahl zurück.
         selected_name = st.selectbox(
-            "Übung direkt auswählen",
+            "Direkt auswählen",
             [x["name"] for x in exercises],
-            index=st.session_state.exercise_index,
-            key=f"direct_exercise_{st.session_state.active_workout}",
+            index=idx,
+            key=f"direct_exercise_{st.session_state.active_workout}_{idx}",
+            label_visibility="collapsed",
         )
         selected_index = next(i for i, x in enumerate(exercises) if x["name"] == selected_name)
-        if selected_index != st.session_state.exercise_index:
+        if selected_index != idx:
             jump_to_exercise(selected_index)
             st.rerun()
 
-        st.progress((ex_no - 1) / max(1, n_ex))
-        m1, m2, m3 = st.columns(3)
-        m1.metric("Runde", f"{st.session_state.round}/{st.session_state.rounds_total}")
-        m2.metric("Übung", f"{ex_no}/{n_ex}")
-        m3.metric("Typ", "Timer" if ex["type"] == "timed" else "Wdh.")
+        st.markdown(
+            f'<div class="compact-note">Runde {st.session_state.round}/{st.session_state.rounds_total} · '
+            f'Übung {ex_no}/{n_ex}</div>',
+            unsafe_allow_html=True,
+        )
 
         st.markdown(f"""
         <div class="fit-card">
@@ -729,71 +734,93 @@ def workout_runner():
         </div>
         """, unsafe_allow_html=True)
 
-        # Bild und Timer bewusst kompakt unmittelbar beieinander.
-        left, right = st.columns([1.55, 0.85], gap="small")
+        # Bild + Timer/Angabe nebeneinander.
+        left, right = st.columns([1.7, 0.75], gap="small")
         with left:
             show_exercise_animation(ex["name"])
+
         with right:
             if ex["type"] == "timed":
                 if st.session_state.timer_end is None:
-                    st.markdown("#### ⏱ Timer")
-                    st.markdown(f"### {ex['seconds']} s")
-                    if st.button("▶ START", use_container_width=True, type="primary", key=f"timer_start_{ex_no}"):
+                    st.markdown(
+                        f"<div style='text-align:center;font-size:13px;font-weight:700;margin-top:6px'>"
+                        f"⏱ {ex['seconds']} Sek.</div>",
+                        unsafe_allow_html=True,
+                    )
+                    if st.button("▶ START", use_container_width=True, type="primary",
+                                 key=f"timer_start_{st.session_state.round}_{idx}"):
                         start_timed_exercise(ex["seconds"])
                         st.rerun()
                 else:
                     remaining = max(0, int(st.session_state.timer_end - time.time()))
                     render_timer(remaining, "Timer")
             else:
-                st.markdown("#### Wiederholungen")
-                st.markdown(f"### {ex['amount']}")
-                st.caption("Sauber und kontrolliert.")
+                st.markdown(
+                    f"<div style='text-align:center;margin-top:10px'>"
+                    f"<div style='font-size:11px;color:#94a3b8'>Wiederholungen</div>"
+                    f"<div style='font-size:17px;font-weight:800'>{ex['amount']}</div></div>",
+                    unsafe_allow_html=True,
+                )
 
-        # Navigation ohne Zyklus-Zwang.
-        nav1, nav2, nav3 = st.columns(3)
-        with nav1:
-            if st.button("⬅ Zurück", use_container_width=True, disabled=(ex_no == 1), key=f"prev_{ex_no}"):
-                previous_exercise()
+        # Nur eine kompakte Navigationszeile.
+        b1, b2, b3 = st.columns(3)
+        with b1:
+            if st.button("⬅ Zurück", use_container_width=True, disabled=(idx == 0),
+                         key=f"prev_{st.session_state.round}_{idx}"):
+                st.session_state.timer_end = None
+                jump_to_exercise(idx - 1)
                 st.rerun()
-        with nav2:
-            if st.button("🧘 Dehnung", use_container_width=True, key=f"stretch_from_{ex_no}"):
-                begin_stretching()
+
+        with b2:
+            # "Erledigt" = tatsächlich zur nächsten Übung; am Rundenende nächste Runde / Dehnung.
+            if st.button("✅ Erledigt", use_container_width=True, type="primary",
+                         key=f"done_{st.session_state.round}_{idx}"):
+                st.session_state.timer_end = None
+                if idx < n_ex - 1:
+                    jump_to_exercise(idx + 1)
+                elif st.session_state.round < st.session_state.rounds_total:
+                    st.session_state.round += 1
+                    jump_to_exercise(0)
+                else:
+                    begin_stretching()
                 st.rerun()
-        with nav3:
-            if ex_no < n_ex:
-                if st.button("Weiter ➡", use_container_width=True, key=f"next_direct_{ex_no}"):
-                    next_exercise_direct()
+
+        with b3:
+            if idx < n_ex - 1:
+                if st.button("Weiter ➡", use_container_width=True,
+                             key=f"next_{st.session_state.round}_{idx}"):
+                    st.session_state.timer_end = None
+                    jump_to_exercise(idx + 1)
                     st.rerun()
             else:
-                if st.button("Runde fertig ✓", use_container_width=True, type="primary", key=f"round_done_{ex_no}"):
-                    if st.session_state.round < st.session_state.rounds_total:
-                        st.session_state.round += 1
-                        jump_to_exercise(0)
-                    else:
-                        begin_stretching()
+                if st.button("🧘 Dehnung", use_container_width=True,
+                             key=f"stretch_{st.session_state.round}_{idx}"):
+                    begin_stretching()
                     st.rerun()
 
-        # Normaler Zirkelmodus bleibt als separate Aktion erhalten.
-        if st.button("✅ Übung erledigt – normal im Zirkel weiter", use_container_width=True, type="primary"):
-            st.session_state.timer_end = None
-            next_exercise()
-            st.rerun()
+        # Dehnung jederzeit direkt erreichbar.
+        if idx < n_ex - 1:
+            if st.button("🧘 Direkt zur Dehnung", use_container_width=True,
+                         key=f"stretch_direct_{st.session_state.round}_{idx}"):
+                begin_stretching()
+                st.rerun()
 
-    # -------------------------
-    # Dehnung
-    # -------------------------
+    # =========================
+    # DEHNUNG
+    # =========================
     elif phase == "stretch":
         idx = st.session_state.stretch_index
         if idx >= len(STRETCH):
             st.session_state.phase = "done"
             st.rerun()
 
-        # Direkte Dehnungsauswahl
+        # Auch hier Key mit aktuellem Index -> kein Zurückspringen nach Weiter.
         stretch_name = st.selectbox(
             "Dehnung direkt auswählen",
             [x["name"] for x in STRETCH],
             index=idx,
-            key="direct_stretch_select",
+            key=f"direct_stretch_select_{idx}",
+            label_visibility="collapsed",
         )
         new_idx = next(i for i, x in enumerate(STRETCH) if x["name"] == stretch_name)
         if new_idx != idx:
@@ -803,7 +830,11 @@ def workout_runner():
 
         idx = st.session_state.stretch_index
         s = STRETCH[idx]
-        st.progress((idx + 1) / len(STRETCH))
+
+        st.markdown(
+            f'<div class="compact-note">Dehnung {idx+1}/{len(STRETCH)}</div>',
+            unsafe_allow_html=True,
+        )
 
         st.markdown(f"""
         <div class="fit-card">
@@ -813,7 +844,7 @@ def workout_runner():
         </div>
         """, unsafe_allow_html=True)
 
-        left, right = st.columns([1.55, 0.85], gap="small")
+        left, right = st.columns([1.7, 0.75], gap="small")
         with left:
             stretch_illustration(s["name"])
         with right:
@@ -821,53 +852,56 @@ def workout_runner():
 
         b1, b2, b3 = st.columns(3)
         with b1:
-            if st.button("⬅ Zurück", use_container_width=True, disabled=(idx == 0), key=f"stretch_prev_{idx}"):
-                st.session_state.stretch_index -= 1
+            if st.button("⬅ Zurück", use_container_width=True, disabled=(idx == 0),
+                         key=f"stretch_prev_{idx}"):
+                st.session_state.stretch_index = idx - 1
+                st.session_state.timer_end = None
                 st.rerun()
+
         with b2:
-            if st.button("🏋️ Training", use_container_width=True, key=f"back_training_{idx}"):
-                # Falls vorher kein Krafttraining gewählt war, Auswahlseite zeigen.
-                if exercises:
-                    st.session_state.phase = "exercise"
+            if st.button("✅ Erledigt", use_container_width=True, type="primary",
+                         key=f"stretch_done_{idx}"):
+                if idx < len(STRETCH) - 1:
+                    st.session_state.stretch_index = idx + 1
                 else:
-                    reset_workout()
+                    st.session_state.phase = "done"
+                st.session_state.timer_end = None
                 st.rerun()
+
         with b3:
             if idx < len(STRETCH) - 1:
-                if st.button("Weiter ➡", use_container_width=True, key=f"stretch_next_{idx}"):
-                    st.session_state.stretch_index += 1
+                if st.button("Weiter ➡", use_container_width=True,
+                             key=f"stretch_next_{idx}"):
+                    st.session_state.stretch_index = idx + 1
+                    st.session_state.timer_end = None
                     st.rerun()
             else:
-                if st.button("Fertig ✓", use_container_width=True, type="primary", key="stretch_finish"):
+                if st.button("Fertig ✓", use_container_width=True, type="primary",
+                             key="stretch_finish"):
                     st.session_state.phase = "done"
                     st.rerun()
 
     elif phase == "done":
         st.success("🎉 Training / Dehnung geschafft!")
-        if st.button("Training beenden", use_container_width=True, type="primary"):
+        if st.button("Beenden", use_container_width=True, type="primary"):
             reset_workout()
             st.rerun()
-
-    if phase not in ["done", "idle"]:
-        if st.button("⛔ Training abbrechen", use_container_width=True):
-            reset_workout()
-            st.rerun()
-
 
 # -------------------------------------------------
 # App
 # -------------------------------------------------
-st.title("💪 Fit 88")
-
 today_name = GERMAN_DAYS[local_today().weekday()]
 icon, typ, summary = WEEK_PLAN[today_name]
 
-# Tages-Checkliste direkt ganz oben unter dem App-Titel.
-render_daily_dashboard(today_name)
-
-st.caption("Training ohne Geräte · Wochenplan · Gewicht · Ernährung")
-st.markdown(f"### Heute: {today_name}")
-st.info(f"{icon} **{typ}**  \n{summary}")
+# Während eines laufenden Trainings möglichst keinen Platz oberhalb der Übung verbrauchen.
+if st.session_state.active_workout:
+    st.markdown("### 💪 Fit 88")
+else:
+    st.title("💪 Fit 88")
+    render_daily_dashboard(today_name)
+    st.caption("Training ohne Geräte · Wochenplan · Gewicht · Ernährung")
+    st.markdown(f"### Heute: {today_name}")
+    st.info(f"{icon} **{typ}**  \n{summary}")
 
 tabs = st.tabs(["🏠 Heute", "▶️ Training", "📅 Woche", "🎯 Aufgaben", "⚖️ Gewicht", "🥗 Ernährung"])
 
@@ -904,34 +938,33 @@ with tabs[0]:
         st.caption("Krafttraining kannst du unabhängig davon im Tab „Training“ ansehen.")
 
 with tabs[1]:
-    st.markdown("### Training auswählen oder ansehen")
-    st.caption("Krafttraining, einzelne Übung oder Dehnung lassen sich jederzeit direkt öffnen.")
-
-    if st.button("🧘 NUR DEHNUNG ÖFFNEN", use_container_width=True, key="select_stretch_only"):
-        begin_stretching()
-        st.rerun()
-
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        choose_a = st.button("Dienstag\nKraft A", use_container_width=True, key="select_workout_a")
-    with c2:
-        choose_core = st.button("Donnerstag\nRücken/Core", use_container_width=True, key="select_workout_core")
-    with c3:
-        choose_b = st.button("Freitag\nKraft B", use_container_width=True, key="select_workout_b")
-
-    if choose_a:
-        begin_workout("Kraft A", WORKOUT_A, 3)
-    elif choose_core:
-        begin_workout("Rücken/Core", WORKOUT_CORE, 2)
-    elif choose_b:
-        begin_workout("Kraft B", WORKOUT_B, 3)
-
     if st.session_state.active_workout:
-        st.divider()
-        st.markdown(f"### 🏋️ {st.session_state.active_workout}")
         workout_runner()
     else:
-        st.info("Wähle oben ein Training aus. Es wird dann direkt hier mit Animationen geöffnet.")
+        st.markdown("### Training auswählen")
+        st.caption("Krafttraining oder Dehnung direkt öffnen.")
+
+        if st.button("🧘 NUR DEHNUNG", use_container_width=True, key="select_stretch_only"):
+            begin_stretching()
+            st.rerun()
+
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            choose_a = st.button("Kraft A", use_container_width=True, key="select_workout_a")
+        with c2:
+            choose_core = st.button("Rücken/Core", use_container_width=True, key="select_workout_core")
+        with c3:
+            choose_b = st.button("Kraft B", use_container_width=True, key="select_workout_b")
+
+        if choose_a:
+            begin_workout("Kraft A", WORKOUT_A, 3)
+            st.rerun()
+        elif choose_core:
+            begin_workout("Rücken/Core", WORKOUT_CORE, 2)
+            st.rerun()
+        elif choose_b:
+            begin_workout("Kraft B", WORKOUT_B, 3)
+            st.rerun()
 
 with tabs[2]:
     st.markdown("### Wochenplan")
