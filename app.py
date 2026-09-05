@@ -50,42 +50,57 @@ div[data-testid="stCheckbox"]:hover{
     background:#1d2939;
 }
 
-@media (max-width:700px){h1{font-size:1.8rem!important}h2{font-size:1.45rem!important}h3{font-size:1.2rem!important}}
+/* Kompakter Trainingsmodus: Bild, Text, Timer und Navigation möglichst in einer Ansicht */
+.fit-card{padding:10px 12px;border-radius:14px;background:#18212f;color:#fff;text-align:center;
+          margin:4px 0 6px 0;border:1px solid rgba(255,255,255,.12);}
+.fit-card .name{font-size:24px;font-weight:800;line-height:1.1;}
+.fit-card .amount{font-size:18px;font-weight:700;margin-top:5px;color:#dbeafe;}
+.fit-card .cue{font-size:13px;margin-top:6px;color:#e5e7eb;line-height:1.25;}
+.compact-note{font-size:.86rem;color:#94a3b8;text-align:center;margin:.1rem 0 .35rem 0;}
+div[data-testid="stSelectbox"]{margin-bottom:.2rem;}
+@media (max-width:700px){
+  h1{font-size:1.65rem!important} h2{font-size:1.35rem!important} h3{font-size:1.08rem!important}
+  .block-container{padding-top:.55rem!important;padding-bottom:1rem!important;}
+  div[data-testid="stButton"]>button{min-height:44px;font-size:.94rem;}
+  .fit-card .name{font-size:21px}.fit-card .amount{font-size:16px}.fit-card .cue{font-size:12px}
+}
 </style>
 """, unsafe_allow_html=True)
 
 
 
 # -------------------------------------------------
-# Übungsdarstellung: freie Exercise-Datenbank + lokale Fallbacks
+# Übungsdarstellung: lokale männliche Bilder bevorzugt
 # -------------------------------------------------
-# Quelle der Bildpaare:
-# https://github.com/yuhonas/free-exercise-db
-# Die Datenbank stellt pro Übung typischerweise zwei Fotos bereit
-# (Start-/Endposition). Diese werden unten weich überblendet und wirken
-# dadurch wie eine kurze Übungsanimation.
+# Lege die neuen Bilder in den Ordner "assets_male".
+# Die App verwendet sie automatisch. Nur wenn eine Datei fehlt, wird
+# vorübergehend auf die freie Exercise-Datenbank zurückgegriffen.
 DB_BASE = "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises"
 
 EXERCISE_DB = {
     "Kniebeugen": ("Bodyweight_Squat/0.jpg", "Bodyweight_Squat/1.jpg"),
     "Liegestütze": ("Pushups/0.jpg", "Pushups/1.jpg"),
     "Rückwärts-Ausfallschritte": ("Bodyweight_Walking_Lunge/0.jpg", "Bodyweight_Walking_Lunge/1.jpg"),
-    # Die Datenbank hat hier keine reine Bodyweight-Variante; die Bewegung ist dieselbe.
     "Split Squats": ("Split_Squat_with_Dumbbells/0.jpg", "Split_Squat_with_Dumbbells/1.jpg"),
     "Plank": ("Plank/0.jpg", "Plank/1.jpg"),
     "Seitstütz links": ("Side_Bridge/0.jpg", "Side_Bridge/1.jpg"),
     "Seitstütz rechts": ("Side_Bridge/0.jpg", "Side_Bridge/1.jpg"),
-    # Für Scapular Push-ups zeigt das Push-up-Bild die korrekte Grundposition.
     "Scapular Push-ups": ("Pushups/0.jpg", "Pushups/1.jpg"),
 }
 
-# Für Übungen, die in der freien Datenbank nicht passend vorhanden sind,
-# werden vorhandene lokale Grafiken weiterverwendet.
-EXERCISE_IMAGES = {
-    "Reverse Snow Angels": "assets/reverse_snow_angels.png",
-    "Y-T-W": "assets/ytw.png",
-    "Bird Dog": "assets/bird_dog.png",
-    "Glute Bridge": "assets/glute_bridge.png",
+MALE_EXERCISE_IMAGES = {
+    "Kniebeugen": "assets_male/kniebeugen.png",
+    "Liegestütze": "assets_male/liegestuetze.png",
+    "Rückwärts-Ausfallschritte": "assets_male/rueckwaerts_ausfallschritte.png",
+    "Split Squats": "assets_male/split_squats.png",
+    "Reverse Snow Angels": "assets_male/reverse_snow_angels.png",
+    "Y-T-W": "assets_male/ytw.png",
+    "Bird Dog": "assets_male/bird_dog.png",
+    "Glute Bridge": "assets_male/glute_bridge.png",
+    "Plank": "assets_male/plank.png",
+    "Seitstütz links": "assets_male/seitstuetz.png",
+    "Seitstütz rechts": "assets_male/seitstuetz.png",
+    "Scapular Push-ups": "assets_male/scapular_pushups.png",
 }
 
 EXERCISE_TIPS = {
@@ -103,118 +118,54 @@ EXERCISE_TIPS = {
     "Scapular Push-ups": "Arme gestreckt lassen · Bewegung ausschließlich aus den Schulterblättern.",
 }
 
-
 def show_exercise_animation(name):
-    """Zeigt eine körpernahe Übungsanimation aus zwei Datenbank-Fotos."""
+    """Kompakte Übungsdarstellung. Lokale männliche PNGs werden bevorzugt."""
     tip = EXERCISE_TIPS.get(
-        name,
-        "Langsam, kontrolliert und nur im schmerzfreien Bewegungsbereich ausführen."
+        name, "Langsam, kontrolliert und nur im schmerzfreien Bewegungsbereich ausführen."
     )
+
+    local_path = MALE_EXERCISE_IMAGES.get(name)
+    if local_path and Path(local_path).exists():
+        # Bei rechter Seite dasselbe Bild spiegeln.
+        if name == "Seitstütz rechts":
+            from PIL import Image, ImageOps
+            img = Image.open(local_path)
+            st.image(ImageOps.mirror(img), use_container_width=True)
+        else:
+            st.image(local_path, use_container_width=True)
+        st.markdown(f'<div class="compact-note"><b>Technik:</b> {tip}</div>', unsafe_allow_html=True)
+        return
 
     pair = EXERCISE_DB.get(name)
     if pair:
         url1 = f"{DB_BASE}/{pair[0]}"
         url2 = f"{DB_BASE}/{pair[1]}"
-
-        # Rechts/links beim Seitstütz optisch spiegeln.
         mirror = "scaleX(-1)" if name == "Seitstütz rechts" else "scaleX(1)"
-
         html = f"""
         <style>
-          .db-card {{
-            max-width:540px;
-            margin:8px auto 10px auto;
-            padding:12px;
-            border:1px solid #dbe3ee;
-            border-radius:20px;
-            background:linear-gradient(180deg,#f8fbff 0%,#eef5ff 100%);
-            box-shadow:0 8px 24px rgba(15,42,70,.08);
-          }}
-          .db-title {{
-            text-align:center;
-            font:700 13px/1.2 Arial,sans-serif;
-            letter-spacing:.05em;
-            color:#35516f;
-            margin:2px 0 8px 0;
-          }}
           .db-anim {{
-            position:relative;
-            height:300px;
-            overflow:hidden;
-            border-radius:15px;
-            background:#fff;
+            position:relative;height:215px;overflow:hidden;border-radius:12px;background:#111827;
           }}
           .db-anim img {{
-            position:absolute;
-            inset:0;
-            width:100%;
-            height:100%;
-            object-fit:contain;
-            transform:{mirror};
-            animation-duration:2.8s;
-            animation-iteration-count:infinite;
+            position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
+            transform:{mirror};animation-duration:2.8s;animation-iteration-count:infinite;
             animation-timing-function:ease-in-out;
           }}
-          .db-a {{ animation-name:dbA; }}
-          .db-b {{ animation-name:dbB; }}
-          @keyframes dbA {{
-            0%,38% {{opacity:1}}
-            50%,88% {{opacity:0}}
-            100% {{opacity:1}}
-          }}
-          @keyframes dbB {{
-            0%,38% {{opacity:0}}
-            50%,88% {{opacity:1}}
-            100% {{opacity:0}}
-          }}
-          .db-motion {{
-            text-align:center;
-            color:#6b8db3;
-            font:700 17px Arial,sans-serif;
-            margin:8px 0 2px 0;
-          }}
-          .db-tip {{
-            max-width:540px;
-            margin:0 auto 10px auto;
-            padding:11px 14px;
-            border-radius:14px;
-            background:#eaf2ff;
-            border:1px solid #d5e5ff;
-            color:#203a56;
-            font:14px/1.4 Arial,sans-serif;
-            text-align:center;
-          }}
+          .db-a {{animation-name:dbA}} .db-b {{animation-name:dbB}}
+          @keyframes dbA {{0%,38%{{opacity:1}}50%,88%{{opacity:0}}100%{{opacity:1}}}}
+          @keyframes dbB {{0%,38%{{opacity:0}}50%,88%{{opacity:1}}100%{{opacity:0}}}}
         </style>
-        <div class="db-card">
-          <div class="db-title">BEWEGUNGSABLAUF</div>
-          <div class="db-anim">
-            <img class="db-a" src="{url1}" alt="{name} Startposition">
-            <img class="db-b" src="{url2}" alt="{name} Endposition">
-          </div>
-          <div class="db-motion">● &nbsp; ↔ &nbsp; ●</div>
+        <div class="db-anim">
+          <img class="db-a" src="{url1}" alt="{name} Startposition">
+          <img class="db-b" src="{url2}" alt="{name} Endposition">
         </div>
-        <div class="db-tip"><b>Technik:</b> {tip}</div>
         """
-        st.components.v1.html(html, height=410)
+        st.components.v1.html(html, height=225)
+        st.markdown(f'<div class="compact-note"><b>Technik:</b> {tip}</div>', unsafe_allow_html=True)
         return
 
-    # Fallback für Übungen ohne passendes Datenbank-Bildpaar.
-    image_path = EXERCISE_IMAGES.get(name)
-    if image_path and Path(image_path).exists():
-        st.image(image_path, use_container_width=True)
-        st.markdown(
-            f"""
-            <div style="max-width:540px;margin:0 auto 10px auto;padding:11px 14px;
-                        border-radius:14px;background:#eaf2ff;border:1px solid #d5e5ff;
-                        color:#203a56;text-align:center;font-size:14px;">
-              <b>Technik:</b> {tip}
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    else:
-        st.info("Für diese Übung ist aktuell noch keine passende Datenbank-Animation hinterlegt.")
-        st.caption(f"Technik: {tip}")
+    st.info("Für diese Übung fehlt noch das Bild in assets_male.")
+    st.caption(f"Technik: {tip}")
 
 
 # -------------------------------------------------
@@ -304,7 +255,7 @@ for k, v in defaults.items():
         st.session_state[k] = v
 
 # Einmaliger Reset nach diesem Update, damit kein altes Training fälschlich als aktiv erscheint.
-APP_STATE_VERSION = "2026-08-20-v4-db-animation"
+APP_STATE_VERSION = "2026-09-05-v5-compact-navigation-male-images"
 if st.session_state.get("_app_state_version") != APP_STATE_VERSION:
     for k, v in defaults.items():
         st.session_state[k] = v
@@ -577,6 +528,30 @@ def begin_workout(name, exercises, rounds):
     st.session_state.timer_end = None
     st.session_state.stretch_index = 0
 
+def begin_stretching():
+    st.session_state.active_workout = "Nur Dehnung"
+    st.session_state.exercise_list = []
+    st.session_state.rounds_total = 0
+    st.session_state.round = 1
+    st.session_state.exercise_index = 0
+    st.session_state.phase = "stretch"
+    st.session_state.timer_end = None
+    st.session_state.stretch_index = 0
+
+def jump_to_exercise(index):
+    if not st.session_state.exercise_list:
+        return
+    index = max(0, min(index, len(st.session_state.exercise_list) - 1))
+    st.session_state.exercise_index = index
+    st.session_state.phase = "exercise"
+    st.session_state.timer_end = None
+
+def previous_exercise():
+    jump_to_exercise(st.session_state.exercise_index - 1)
+
+def next_exercise_direct():
+    jump_to_exercise(st.session_state.exercise_index + 1)
+
 def next_exercise():
     idx = st.session_state.exercise_index
     if idx + 1 < len(st.session_state.exercise_list):
@@ -623,8 +598,33 @@ def render_timer(seconds, label):
 
 
 def stretch_illustration(name):
-    """Einfache schematische Illustration passend zur jeweiligen Dehnübung."""
+    """Bevorzugt lokale männliche Dehnungsbilder; SVG bleibt als Fallback."""
     key = name.lower()
+
+    stretch_local = None
+    mirror = False
+    if "brustdehnung" in key:
+        stretch_local = "assets_male/brustdehnung.png"
+        mirror = "rechts" in key
+    elif "lat-/rückendehnung" in key:
+        stretch_local = "assets_male/rueckendehnung.png"
+    elif "hüftbeuger" in key:
+        stretch_local = "assets_male/hueftbeuger.png"
+        mirror = "rechts" in key
+    elif "quadrizeps" in key:
+        stretch_local = "assets_male/quadrizeps.png"
+        mirror = "rechts" in key
+    elif "wade" in key:
+        stretch_local = "assets_male/wadendehnung.png"
+        mirror = "rechts" in key
+
+    if stretch_local and Path(stretch_local).exists():
+        if mirror:
+            from PIL import Image, ImageOps
+            st.image(ImageOps.mirror(Image.open(stretch_local)), use_container_width=True)
+        else:
+            st.image(stretch_local, use_container_width=True)
+        return
 
     def wrap(body, label):
         return f"""
@@ -688,86 +688,171 @@ def stretch_illustration(name):
 def workout_runner():
     phase = st.session_state.phase
     exercises = st.session_state.exercise_list
-    n_ex = max(1, len(exercises))
+    n_ex = len(exercises)
 
-    if phase not in ["stretch", "done"]:
-        overall_index = ((st.session_state.round - 1) * n_ex + st.session_state.exercise_index)
-        total_steps = max(1, st.session_state.rounds_total * n_ex)
-        st.progress(min(1.0, overall_index / total_steps))
+    # -------------------------
+    # Kraft-/Core-Übung
+    # -------------------------
+    if phase in ["exercise", "rest", "round_rest"] and n_ex:
+        # Pausen können jederzeit durch direkte Navigation verlassen werden.
+        if phase in ["rest", "round_rest"]:
+            st.session_state.phase = "exercise"
+            st.session_state.timer_end = None
+            phase = "exercise"
 
-    if phase == "exercise":
         ex = exercises[st.session_state.exercise_index]
         ex_no = st.session_state.exercise_index + 1
-        c1, c2 = st.columns(2)
-        c1.metric("Runde", f"{st.session_state.round}/{st.session_state.rounds_total}")
-        c2.metric("Übung", f"{ex_no}/{n_ex}")
+
+        # Direkte Übungsauswahl: kein Durchklicken durch alle Runden nötig.
+        selected_name = st.selectbox(
+            "Übung direkt auswählen",
+            [x["name"] for x in exercises],
+            index=st.session_state.exercise_index,
+            key=f"direct_exercise_{st.session_state.active_workout}",
+        )
+        selected_index = next(i for i, x in enumerate(exercises) if x["name"] == selected_name)
+        if selected_index != st.session_state.exercise_index:
+            jump_to_exercise(selected_index)
+            st.rerun()
+
+        st.progress((ex_no - 1) / max(1, n_ex))
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Runde", f"{st.session_state.round}/{st.session_state.rounds_total}")
+        m2.metric("Übung", f"{ex_no}/{n_ex}")
+        m3.metric("Typ", "Timer" if ex["type"] == "timed" else "Wdh.")
+
         st.markdown(f"""
-        <div style="padding:16px 14px;border-radius:16px;background:#18212f;color:#fff;text-align:center;margin-bottom:8px;border:1px solid rgba(255,255,255,.12);">
-          <div style="font-size:28px;font-weight:800;line-height:1.15;">{ex['name']}</div>
-          <div style="font-size:20px;font-weight:700;margin-top:8px;color:#dbeafe;">{ex['amount']}</div>
-          <div style="font-size:15px;margin-top:10px;color:#e5e7eb;line-height:1.35;white-space:normal;overflow-wrap:anywhere;">{ex['cue']}</div>
+        <div class="fit-card">
+          <div class="name">{ex['name']}</div>
+          <div class="amount">{ex['amount']}</div>
+          <div class="cue">{ex['cue']}</div>
         </div>
         """, unsafe_allow_html=True)
-        show_exercise_animation(ex["name"])
-        if ex["type"] == "timed":
-            if st.session_state.timer_end is None:
-                if st.button("▶ TIMER STARTEN", use_container_width=True, type="primary"):
-                    start_timed_exercise(ex["seconds"]); st.rerun()
+
+        # Bild und Timer bewusst kompakt unmittelbar beieinander.
+        left, right = st.columns([1.55, 0.85], gap="small")
+        with left:
+            show_exercise_animation(ex["name"])
+        with right:
+            if ex["type"] == "timed":
+                if st.session_state.timer_end is None:
+                    st.markdown("#### ⏱ Timer")
+                    st.markdown(f"### {ex['seconds']} s")
+                    if st.button("▶ START", use_container_width=True, type="primary", key=f"timer_start_{ex_no}"):
+                        start_timed_exercise(ex["seconds"])
+                        st.rerun()
+                else:
+                    remaining = max(0, int(st.session_state.timer_end - time.time()))
+                    render_timer(remaining, "Timer")
             else:
-                remaining = max(0, int(st.session_state.timer_end - time.time()))
-                render_timer(remaining, ex["name"])
-                if st.button("✅ FERTIG → WEITER", use_container_width=True, type="primary"):
-                    st.session_state.timer_end = None; next_exercise(); st.rerun()
-        else:
-            if st.button("✅ FERTIG → WEITER", use_container_width=True, type="primary"):
-                next_exercise(); st.rerun()
+                st.markdown("#### Wiederholungen")
+                st.markdown(f"### {ex['amount']}")
+                st.caption("Sauber und kontrolliert.")
 
-    elif phase == "rest":
-        remaining = max(0, int(st.session_state.timer_end - time.time()))
-        st.markdown("## ⏱ Kurze Pause")
-        st.caption("20 Sekunden – ruhig atmen, Position wechseln.")
-        render_timer(remaining, "Pause")
-        if st.button("⏭ NÄCHSTE ÜBUNG", use_container_width=True, type="primary"):
-            st.session_state.phase = "exercise"; st.session_state.timer_end = None; st.rerun()
+        # Navigation ohne Zyklus-Zwang.
+        nav1, nav2, nav3 = st.columns(3)
+        with nav1:
+            if st.button("⬅ Zurück", use_container_width=True, disabled=(ex_no == 1), key=f"prev_{ex_no}"):
+                previous_exercise()
+                st.rerun()
+        with nav2:
+            if st.button("🧘 Dehnung", use_container_width=True, key=f"stretch_from_{ex_no}"):
+                begin_stretching()
+                st.rerun()
+        with nav3:
+            if ex_no < n_ex:
+                if st.button("Weiter ➡", use_container_width=True, key=f"next_direct_{ex_no}"):
+                    next_exercise_direct()
+                    st.rerun()
+            else:
+                if st.button("Runde fertig ✓", use_container_width=True, type="primary", key=f"round_done_{ex_no}"):
+                    if st.session_state.round < st.session_state.rounds_total:
+                        st.session_state.round += 1
+                        jump_to_exercise(0)
+                    else:
+                        begin_stretching()
+                    st.rerun()
 
-    elif phase == "round_rest":
-        remaining = max(0, int(st.session_state.timer_end - time.time()))
-        finished_round = st.session_state.round - 1
-        st.success(f"Runde {finished_round} geschafft ✓")
-        st.markdown(f"### Gleich startet Runde {st.session_state.round} von {st.session_state.rounds_total}")
-        render_timer(remaining, "75 Sek. Rundenpause")
-        if st.button(f"▶ RUNDE {st.session_state.round} STARTEN", use_container_width=True, type="primary"):
-            st.session_state.phase = "exercise"; st.session_state.timer_end = None; st.rerun()
+        # Normaler Zirkelmodus bleibt als separate Aktion erhalten.
+        if st.button("✅ Übung erledigt – normal im Zirkel weiter", use_container_width=True, type="primary"):
+            st.session_state.timer_end = None
+            next_exercise()
+            st.rerun()
 
+    # -------------------------
+    # Dehnung
+    # -------------------------
     elif phase == "stretch":
         idx = st.session_state.stretch_index
         if idx >= len(STRETCH):
-            st.session_state.phase = "done"; st.rerun()
+            st.session_state.phase = "done"
+            st.rerun()
+
+        # Direkte Dehnungsauswahl
+        stretch_name = st.selectbox(
+            "Dehnung direkt auswählen",
+            [x["name"] for x in STRETCH],
+            index=idx,
+            key="direct_stretch_select",
+        )
+        new_idx = next(i for i, x in enumerate(STRETCH) if x["name"] == stretch_name)
+        if new_idx != idx:
+            st.session_state.stretch_index = new_idx
+            st.session_state.timer_end = None
+            st.rerun()
+
+        idx = st.session_state.stretch_index
         s = STRETCH[idx]
         st.progress((idx + 1) / len(STRETCH))
-        st.caption(f"Dehnung {idx+1} von {len(STRETCH)}")
+
         st.markdown(f"""
-        <div style="padding:16px;border-radius:16px;background:#18212f;color:#fff;text-align:center;margin-bottom:10px;">
-          <div style="font-size:26px;font-weight:800;">{s['name']}</div>
-          <div style="font-size:20px;margin-top:8px;color:#dbeafe;">{s['seconds']} Sekunden</div>
-          <div style="font-size:15px;margin-top:10px;color:#e5e7eb;white-space:normal;overflow-wrap:anywhere;">{s['cue']}</div>
+        <div class="fit-card">
+          <div class="name">{s['name']}</div>
+          <div class="amount">{s['seconds']} Sekunden</div>
+          <div class="cue">{s['cue']}</div>
         </div>
         """, unsafe_allow_html=True)
-        stretch_illustration(s["name"])
-        render_timer(s["seconds"], s["name"])
-        if st.button("✅ NÄCHSTE DEHNUNG", use_container_width=True, type="primary"):
-            st.session_state.stretch_index += 1; st.rerun()
+
+        left, right = st.columns([1.55, 0.85], gap="small")
+        with left:
+            stretch_illustration(s["name"])
+        with right:
+            render_timer(s["seconds"], "Dehnung")
+
+        b1, b2, b3 = st.columns(3)
+        with b1:
+            if st.button("⬅ Zurück", use_container_width=True, disabled=(idx == 0), key=f"stretch_prev_{idx}"):
+                st.session_state.stretch_index -= 1
+                st.rerun()
+        with b2:
+            if st.button("🏋️ Training", use_container_width=True, key=f"back_training_{idx}"):
+                # Falls vorher kein Krafttraining gewählt war, Auswahlseite zeigen.
+                if exercises:
+                    st.session_state.phase = "exercise"
+                else:
+                    reset_workout()
+                st.rerun()
+        with b3:
+            if idx < len(STRETCH) - 1:
+                if st.button("Weiter ➡", use_container_width=True, key=f"stretch_next_{idx}"):
+                    st.session_state.stretch_index += 1
+                    st.rerun()
+            else:
+                if st.button("Fertig ✓", use_container_width=True, type="primary", key="stretch_finish"):
+                    st.session_state.phase = "done"
+                    st.rerun()
 
     elif phase == "done":
-        st.balloons(); st.success("🎉 Training und Stretching geschafft!")
-        st.markdown("**Heute zählt:** sauber trainiert, Kraftreiz gesetzt, fertig.")
+        st.success("🎉 Training / Dehnung geschafft!")
         if st.button("Training beenden", use_container_width=True, type="primary"):
-            reset_workout(); st.rerun()
+            reset_workout()
+            st.rerun()
 
     if phase not in ["done", "idle"]:
-        st.divider()
         if st.button("⛔ Training abbrechen", use_container_width=True):
-            reset_workout(); st.rerun()
+            reset_workout()
+            st.rerun()
+
 
 # -------------------------------------------------
 # App
@@ -820,7 +905,11 @@ with tabs[0]:
 
 with tabs[1]:
     st.markdown("### Training auswählen oder ansehen")
-    st.caption("Du kannst jedes Krafttraining jederzeit öffnen – unabhängig vom heutigen Wochentag.")
+    st.caption("Krafttraining, einzelne Übung oder Dehnung lassen sich jederzeit direkt öffnen.")
+
+    if st.button("🧘 NUR DEHNUNG ÖFFNEN", use_container_width=True, key="select_stretch_only"):
+        begin_stretching()
+        st.rerun()
 
     c1, c2, c3 = st.columns(3)
     with c1:
